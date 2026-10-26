@@ -25,6 +25,13 @@ export default async function GuruPage() {
     entry.subjects.push(a.subject === "iman" ? "Iman" : "Qur'an");
     byClass.set(c.id, entry);
   }
+  // Admin melihat semua kelas walau tidak ditugaskan mengajar.
+  if (profile.role === "admin") {
+    const { data: allClasses } = await supabase.from("classes").select("id, name");
+    for (const c of allClasses ?? []) {
+      if (!byClass.has(c.id)) byClass.set(c.id, { id: c.id, name: c.name, subjects: ["Admin"] });
+    }
+  }
   const classes = [...byClass.values()].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
