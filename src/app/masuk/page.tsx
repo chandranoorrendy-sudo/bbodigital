@@ -63,7 +63,7 @@ export default function MasukPage() {
         <h1 className="text-2xl font-semibold">Belajar Bersama Orang Tua</h1>
         <p className="text-muted-foreground">
           {step === "email"
-            ? "Masuk dengan email yang didaftarkan di kuttab. Kami kirimkan kode 6 angka."
+            ? "Masuk dengan email yang didaftarkan di kuttab. Kami kirimkan kode atau tautan masuk."
             : `Buka email di ${email}. Ketik kode 6 angka di bawah, atau ketuk tautan masuk di email itu dari HP ini.`}
         </p>
       </header>
