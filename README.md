@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BBO Digital — Kuttab Imam Al-Ghazali
 
-## Getting Started
+Aplikasi web (PWA) pengganti lembar **Belajar Bersama Orang Tua (BBO)** cetak untuk Kuttab Awal 1–2.
+Stack: Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui, Supabase (Auth OTP email, Postgres + RLS, Storage privat).
 
-First, run the development server:
+## Status: Tahap 1 — Fondasi
+
+- [x] Project Supabase `bbo-kuttab` (Singapore, `ap-southeast-1`)
+- [x] Migrasi seluruh tabel PRD bagian 7 (`supabase/migrations`)
+- [x] Kebijakan RLS PRD bagian 8 + uji dua akun orang tua (`supabase/tests/rls_test.sql`)
+- [x] Bucket privat `bbo-content` dan `submissions` beserta kebijakannya
+- [x] Seed: 1 tahun ajaran, KA2A & KA2B, 1 guru Iman, 1 guru Qur'an, 1 admin, 4 santri rekaan, 3 akun orang tua,
+      Lembar 11 & 12 versi kartu Inti / Pengayaan / Untuk Ayah Bunda (`supabase/seed.sql`)
+- [x] Login OTP email 6 angka, sesi 30 hari, beranda orang tua (tab kakak-adik), halaman "Kelas saya" guru
+
+## Menjalankan di komputer
 
 ```bash
+cp .env.example .env.local
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Buka http://localhost:3000. Untuk mencoba dari HP di Wi-Fi yang sama: `npm run dev -- -H 0.0.0.0`,
+lalu buka `http://<IP-laptop>:3000` (catatan: kamera/mikrofon di tahap berikutnya butuh HTTPS, jadi gunakan URL Vercel).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Data contoh (semua nama rekaan)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Akun | Peran | Santri |
+| --- | --- | --- |
+| Ortu A — Siti Aminah | orang tua (ibu) | Hafsah (KA2A), Umar (KA2B) |
+| Ortu B — Ahmad Rasyid | orang tua (ayah) | Zaid (KA2B) |
+| Ortu C — Fatimah Zahra | orang tua (ibu) | Maryam (KA2A) |
+| Ustadzah Rahma Fadhilah | guru Iman, wali kelas KA2A & KA2B | — |
+| Ustadz Hamzah Ibrahim | guru Qur'an KA2A & KA2B | — |
+| Admin Kuttab | admin | — |
 
-## Learn More
+Email seed memakai domain `.test` (tidak bisa menerima surat). Mailer bawaan Supabase hanya mengirim ke email
+anggota tim project, jadi untuk mencoba login ganti email salah satu akun ke email Anda:
 
-To learn more about Next.js, take a look at the following resources:
+```sql
+update auth.users set email = 'anda@contoh.com' where id = 'a0000000-0000-4000-8000-00000000000a'; -- Ortu A
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Untuk banyak orang tua sungguhan, pasang SMTP sendiri (Auth → SMTP Settings).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Pengaturan Supabase Auth (sekali saja, di dashboard)
 
-## Deploy on Vercel
+1. **Authentication → Email Templates → Magic Link**: tambahkan `{{ .Token }}` agar email berisi kode 6 angka, misalnya
+   `<h2>Kode masuk BBO</h2><p>Kode Anda: <strong>{{ .Token }}</strong></p><p>Berlaku 1 jam.</p>`
+2. **Authentication → URL Configuration**: Site URL = URL Vercel; tambahkan `https://<url-vercel>/auth/callback`
+   dan `http://localhost:3000/auth/callback` ke Redirect URLs.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Uji RLS
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Jalankan isi `supabase/tests/rls_test.sql` di SQL Editor. Skrip berpura-pura menjadi Ortu A, Ortu B, guru, dan pengunjung
+tanpa login, lalu menampilkan tabel `LULUS/GAGAL`; semua perubahan di-rollback.
+
+## Struktur
+
+```
+src/app/masuk          login email → kode OTP
+src/app/beranda        beranda orang tua (BBO aktif, progres kartu Inti, tanggapan guru)
+src/app/guru           kelas saya (jumlah status, tanpa skor)
+src/middleware.ts      penyegaran sesi + wajib login
+supabase/migrations    skema, RLS, storage, fungsi
+supabase/seed.sql      data contoh rekaan
+supabase/tests         uji RLS
+```
