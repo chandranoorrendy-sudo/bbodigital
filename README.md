@@ -5,7 +5,8 @@ Stack: Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui, Supabase (Au
 
 ## Status: Tahap 1 — Fondasi
 
-- [x] Project Supabase `bbo-kuttab` (Singapore, `ap-southeast-1`)
+- [x] Project Supabase `BBO Digital SG` (`lzceknfriyavdvvvvjgq`, Singapore `ap-southeast-1`, organisasi RQ25)
+- [x] Situs: https://bbodigital.vercel.app (Vercel tim RQ25, repo `chandranoorrendy-sudo/bbodigital`)
 - [x] Migrasi seluruh tabel PRD bagian 7 (`supabase/migrations`)
 - [x] Kebijakan RLS PRD bagian 8 + uji dua akun orang tua (`supabase/tests/rls_test.sql`)
 - [x] Bucket privat `bbo-content` dan `submissions` beserta kebijakannya
@@ -46,8 +47,10 @@ Untuk banyak orang tua sungguhan, pasang SMTP sendiri (Auth → SMTP Settings).
 
 ## Pengaturan Supabase Auth
 
-- **URL Configuration** (sudah diatur): Site URL `https://bbo-kuttab-xzcy.vercel.app`, Redirect URLs
-  `https://bbo-kuttab-xzcy.vercel.app/auth/callback` dan `http://localhost:3000/auth/callback`.
+- **URL Configuration**: Site URL `https://bbodigital.vercel.app`, Redirect URLs
+  `https://bbodigital.vercel.app/auth/callback` dan `http://localhost:3000/auth/callback`.
+- Project baru wajib menjalankan semua migrasi, termasuk `20261027000001_explicit_grants.sql`: project Supabase
+  baru tidak lagi otomatis memberi hak tabel ke `authenticated`.
 - **Kode 6 angka**: mailer bawaan Supabase memakai template tetap yang hanya berisi *tautan* masuk
   (aplikasi menanganinya di `/auth/callback`; buka tautan di HP yang sama dengan tempat meminta kode).
   Agar email berisi kode 6 angka, pasang SMTP sendiri (Auth → Emails → SMTP Settings, mis. Resend/Brevo gratis),
