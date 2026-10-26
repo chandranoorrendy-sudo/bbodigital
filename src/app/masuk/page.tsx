@@ -39,7 +39,7 @@ export default function MasukPage() {
     }
     setEmail(clean);
     setStep("kode");
-    toast.success("Kode sudah dikirim. Silakan cek email Ayah/Bunda.");
+    toast.success("Email masuk sudah dikirim. Silakan cek kotak masuk Ayah/Bunda.");
   }
 
   async function cekKode(value: string) {
@@ -64,7 +64,7 @@ export default function MasukPage() {
         <p className="text-muted-foreground">
           {step === "email"
             ? "Masuk dengan email yang didaftarkan di kuttab. Kami kirimkan kode 6 angka."
-            : `Masukkan 6 angka yang dikirim ke ${email}.`}
+            : `Buka email di ${email}. Ketik kode 6 angka di bawah, atau ketuk tautan masuk di email itu dari HP ini.`}
         </p>
       </header>
 

@@ -44,12 +44,15 @@ update auth.users set email = 'anda@contoh.com' where id = 'a0000000-0000-4000-8
 
 Untuk banyak orang tua sungguhan, pasang SMTP sendiri (Auth → SMTP Settings).
 
-## Pengaturan Supabase Auth (sekali saja, di dashboard)
+## Pengaturan Supabase Auth
 
-1. **Authentication → Email Templates → Magic Link**: tambahkan `{{ .Token }}` agar email berisi kode 6 angka, misalnya
-   `<h2>Kode masuk BBO</h2><p>Kode Anda: <strong>{{ .Token }}</strong></p><p>Berlaku 1 jam.</p>`
-2. **Authentication → URL Configuration**: Site URL = URL Vercel; tambahkan `https://<url-vercel>/auth/callback`
-   dan `http://localhost:3000/auth/callback` ke Redirect URLs.
+- **URL Configuration** (sudah diatur): Site URL `https://bbo-kuttab-xzcy.vercel.app`, Redirect URLs
+  `https://bbo-kuttab-xzcy.vercel.app/auth/callback` dan `http://localhost:3000/auth/callback`.
+- **Kode 6 angka**: mailer bawaan Supabase memakai template tetap yang hanya berisi *tautan* masuk
+  (aplikasi menanganinya di `/auth/callback`; buka tautan di HP yang sama dengan tempat meminta kode).
+  Agar email berisi kode 6 angka, pasang SMTP sendiri (Auth → Emails → SMTP Settings, mis. Resend/Brevo gratis),
+  lalu ubah template **Magic link or OTP** menjadi misalnya
+  `<h2>Kode masuk BBO</h2><p>Kode Anda: <strong>{{ .Token }}</strong></p>`.
 
 ## Uji RLS
 
