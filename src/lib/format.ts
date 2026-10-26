@@ -10,8 +10,11 @@ const tanggalTahun = new Intl.DateTimeFormat("id-ID", {
 export function rentangTanggal(start: string, end: string) {
   const a = new Date(`${start}T00:00:00+07:00`);
   const b = new Date(`${end}T00:00:00+07:00`);
-  if (a.getMonth() === b.getMonth()) {
-    return `${a.getDate()}–${tanggalTahun.format(b)}`;
+  // Ambil hari/bulan dari teks ISO, bukan getDate(): server Vercel berjalan di UTC.
+  const [, startMonth, startDay] = start.split("-").map(Number);
+  const [, endMonth] = end.split("-").map(Number);
+  if (startMonth === endMonth) {
+    return `${startDay}–${tanggalTahun.format(b)}`;
   }
   return `${tanggal.format(a)} – ${tanggalTahun.format(b)}`;
 }
