@@ -17,6 +17,7 @@ export default function MasukPage() {
   const [step, setStep] = useState<"email" | "kode">("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
+  const [showCode, setShowCode] = useState(false);
   const [busy, setBusy] = useState(false);
 
   async function kirimKode(e?: React.FormEvent) {
@@ -32,8 +33,8 @@ export default function MasukPage() {
     if (error) {
       toast.error(
         error.status === 429
-          ? "Terlalu sering meminta kode. Tunggu beberapa menit, lalu coba lagi."
-          : `Kode belum bisa dikirim: ${error.message}`,
+          ? "Terlalu sering meminta email masuk. Tunggu beberapa menit, lalu coba lagi."
+          : `Email masuk belum bisa dikirim: ${error.message}`,
       );
       return;
     }
@@ -63,8 +64,8 @@ export default function MasukPage() {
         <h1 className="text-2xl font-semibold">Belajar Bersama Orang Tua</h1>
         <p className="text-muted-foreground">
           {step === "email"
-            ? "Masuk dengan email yang didaftarkan di kuttab. Kami kirimkan kode atau tautan masuk."
-            : `Buka email di ${email}. Ketik kode 6 angka di bawah, atau ketuk tautan masuk di email itu dari HP ini.`}
+            ? "Masuk dengan email yang didaftarkan di kuttab. Kami kirimkan tautan masuk ke email itu."
+            : `Kami sudah mengirim email ke ${email}. Buka email itu di HP ini, lalu ketuk tautan "Log In".`}
         </p>
       </header>
 
@@ -87,38 +88,54 @@ export default function MasukPage() {
             />
           </div>
           <Button type="submit" size="xl" className="w-full" disabled={busy}>
-            {busy ? "Mengirim…" : "Kirim kode"}
+            {busy ? "Mengirim…" : "Kirim email masuk"}
           </Button>
         </form>
       ) : (
         <div className="space-y-6">
-          <div className="flex justify-center">
-            <InputOTP
-              maxLength={OTP_LENGTH}
-              value={code}
-              onChange={setCode}
-              onComplete={cekKode}
-              disabled={busy}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              autoFocus
-            >
-              <InputOTPGroup>
-                {Array.from({ length: OTP_LENGTH }, (_, i) => (
-                  <InputOTPSlot key={i} index={i} className="size-12 text-xl" />
-                ))}
-              </InputOTPGroup>
-            </InputOTP>
-          </div>
-          <Button size="xl" className="w-full" disabled={busy || code.length !== OTP_LENGTH} onClick={() => cekKode(code)}>
-            {busy ? "Memeriksa…" : "Masuk"}
-          </Button>
+          <ol className="list-decimal space-y-1 rounded-xl border bg-background p-4 pl-9 text-base leading-relaxed">
+            <li>Buka aplikasi email di HP ini.</li>
+            <li>Cari email &quot;Your sign-in link&quot; (cek juga folder Spam).</li>
+            <li>Ketuk tautan &quot;Log In&quot;. Halaman BBO akan terbuka sendiri.</li>
+          </ol>
+
+          {/* Kode 6 angka baru ada di email setelah kuttab memasang SMTP sendiri. */}
+          {showCode ? (
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                <InputOTP
+                  maxLength={OTP_LENGTH}
+                  value={code}
+                  onChange={setCode}
+                  onComplete={cekKode}
+                  disabled={busy}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  autoFocus
+                >
+                  <InputOTPGroup>
+                    {Array.from({ length: OTP_LENGTH }, (_, i) => (
+                      <InputOTPSlot key={i} index={i} className="size-12 text-xl" />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              <Button size="xl" className="w-full" disabled={busy || code.length !== OTP_LENGTH} onClick={() => cekKode(code)}>
+                {busy ? "Memeriksa…" : "Masuk dengan kode"}
+              </Button>
+            </div>
+          ) : (
+            <Button variant="outline" size="xl" className="w-full" onClick={() => setShowCode(true)}>
+              Email saya berisi kode 6 angka
+            </Button>
+          )}
+
           <div className="flex justify-between text-sm">
-            <Button variant="link" className="px-0" onClick={() => { setStep("email"); setCode(""); }}>
+            <Button variant="link" className="px-0" onClick={() => { setStep("email"); setCode(""); setShowCode(false); }}>
               Ganti email
             </Button>
             <Button variant="link" className="px-0" disabled={busy} onClick={() => kirimKode()}>
-              Kirim ulang kode
+              Kirim ulang email
             </Button>
           </div>
         </div>
