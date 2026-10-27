@@ -1,6 +1,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { hariIniJakarta } from "@/lib/format";
-import type { AdabState, Answer, BboSection, MurafaqatItem, SessionData, SheetInfo, SubmissionStatus } from "./types";
+import type {
+  AdabState,
+  AmanahItem,
+  Answer,
+  BboSection,
+  MediaItem,
+  MurafaqatItem,
+  QuranReport,
+  QuranTarget,
+  ReadingLog,
+  SessionData,
+  SheetInfo,
+  Signature,
+  SubmissionStatus,
+} from "./types";
 
 /**
  * Memuat semua yang dibutuhkan sesi BBO satu santri. Semua query lewat RLS:
@@ -23,7 +37,20 @@ export async function loadSession(
   ]);
   if (!student || !sheet || student.class_id !== sheet.class_id) return null;
 
-  const [{ data: sections }, { data: murafaqat }, { data: submission }] = await Promise.all([
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const [
+    { data: sections },
+    { data: murafaqat },
+    { data: submission },
+    { data: amanah },
+    { data: quranTargets },
+    { data: guardian },
+    { data: readingLogs },
+  ] = await Promise.all([
     supabase
       .from("bbo_sections")
       .select(
@@ -39,38 +66,79 @@ export async function loadSession(
       .order("position"),
     supabase
       .from("submissions")
-      .select("id, status, last_card_id, card_responses(card_id, result, note)")
+      .select(
+        "id, status, last_card_id, submitted_at, card_responses(card_id, result, note), " +
+          "quran_reports(id, kind, surah_no, ayah_from, ayah_to, tilawah_book, tilawah_page, fluency, note, audio_path, duration_sec, recorded_at), " +
+          "amanah_checks(amanah_item_id, done), media(id, kind, path, bytes, ref_table, ref_id), " +
+          "parent_notes(obstacle, action), signatures(role, image_path, signed_at)",
+      )
       .eq("sheet_id", sheetId)
       .eq("student_id", studentId)
       .maybeSingle(),
+    supabase.from("amanah_items").select("id, text, needs_photo, position").eq("sheet_id", sheetId).order("position"),
+    supabase.from("quran_targets").select("id, kind, description").eq("sheet_id", sheetId),
+    supabase.from("guardians").select("relation").eq("student_id", studentId).eq("profile_id", user.id).maybeSingle(),
+    supabase
+      .from("reading_logs")
+      .select("id, book, book_title, page, read_on")
+      .eq("student_id", studentId)
+      .order("read_on", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(5),
   ]);
 
+  // Supabase-js tidak bisa menebak bentuk relasi dari select string panjang; tegaskan di sini.
+  const sub = submission as unknown as {
+    id: string;
+    status: SubmissionStatus;
+    last_card_id: string | null;
+    submitted_at: string | null;
+    card_responses: { card_id: string; result: Answer["result"]; note: string | null }[];
+    quran_reports: QuranReport[];
+    amanah_checks: { amanah_item_id: string; done: boolean }[];
+    media: MediaItem[];
+    parent_notes: { obstacle: string | null; action: string | null } | null;
+    signatures: { role: string; image_path: string; signed_at: string }[];
+  } | null;
+
   let adabToday: AdabState | null = null;
-  if (submission) {
+  if (sub) {
     const { data } = await supabase
       .from("adab_logs")
       .select("niat, wudhu, pakaian, duduk, doa_awal, doa_akhir")
-      .eq("submission_id", submission.id)
+      .eq("submission_id", sub.id)
       .eq("session_date", today)
       .maybeSingle();
     adabToday = data;
   }
 
   const answers: Record<string, Answer> = {};
-  for (const r of submission?.card_responses ?? []) {
+  for (const r of sub?.card_responses ?? []) {
     answers[r.card_id] = { result: r.result, note: r.note };
   }
+  const amanahDone: Record<string, boolean> = {};
+  for (const c of sub?.amanah_checks ?? []) amanahDone[c.amanah_item_id] = c.done;
 
   return {
+    userId: user.id,
+    relation: (guardian?.relation as SessionData["relation"]) ?? null,
     student: { id: student.id, full_name: student.full_name, nickname: student.nickname },
     sheet: sheet as SheetInfo,
     sections: (sections ?? []) as BboSection[],
     murafaqat: (murafaqat ?? []) as MurafaqatItem[],
-    submission: submission
-      ? { id: submission.id, status: submission.status as SubmissionStatus, last_card_id: submission.last_card_id }
+    amanah: (amanah ?? []) as AmanahItem[],
+    quranTargets: (quranTargets ?? []) as QuranTarget[],
+    submission: sub
+      ? { id: sub.id, status: sub.status, last_card_id: sub.last_card_id, submitted_at: sub.submitted_at }
       : null,
     answers,
     adabToday,
+    quranReports: [...(sub?.quran_reports ?? [])].sort((a, b) => (a.recorded_at ?? "").localeCompare(b.recorded_at ?? "")),
+    amanahDone,
+    media: sub?.media ?? [],
+    parentNote: { obstacle: sub?.parent_notes?.obstacle ?? null, action: sub?.parent_notes?.action ?? null },
+    signatures: (sub?.signatures ?? []).filter((s) => s.role === "ayah" || s.role === "ibu") as Signature[],
+    readingLogs: (readingLogs ?? []) as ReadingLog[],
     today,
   };
 }

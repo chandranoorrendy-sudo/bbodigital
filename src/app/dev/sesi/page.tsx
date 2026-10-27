@@ -83,7 +83,23 @@ const FIXTURE: SessionData = {
       position: 1,
     },
   ],
+  amanah: [
+    { id: "a1", text: "Melakukan dialog BBO bersama Ananda sesuai panduan.", needs_photo: false, position: 1 },
+    { id: "a2", text: "Lampiran 1: Lembar amanah berhitung 4.", needs_photo: true, position: 2 },
+  ],
+  quranTargets: [
+    { id: "q1", kind: "tilawah", description: "Tilawah sesuai jilid masing-masing, 1 halaman setiap hari" },
+    { id: "q2", kind: "murajaah", description: "Murajaah An-Naba 21–40" },
+  ],
+  userId: "demo-ortu",
+  relation: "ayah",
   submission: null,
   answers: {},
   adabToday: null,
+  quranReports: [],
+  amanahDone: {},
+  media: [],
+  parentNote: { obstacle: null, action: null },
+  signatures: [],
+  readingLogs: [],
 };

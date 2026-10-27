@@ -357,11 +357,6 @@ export function ClosingSlide({
         )}
       </div>
 
-      <p className="text-sm leading-relaxed text-muted-foreground">
-        Laporan Qur&apos;an, amanah, catatan orang tua, dan tanda tangan untuk mengirim BBO akan tersedia di tahap
-        berikutnya.
-      </p>
-
       <Button size="xl" className="w-full" onClick={onFinish}>
         Selesai untuk hari ini
       </Button>

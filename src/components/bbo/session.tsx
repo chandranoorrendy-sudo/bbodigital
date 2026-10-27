@@ -3,20 +3,32 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { memoryStore, supabaseStore, type SessionStore } from "@/lib/bbo/store";
+import { memoryStore, supabaseStore, type NewQuranReport, type SessionStore } from "@/lib/bbo/store";
 import {
   EMPTY_ADAB,
+  MAX_PHOTOS,
   SUBJECT_ORDER,
   type AdabState,
+  type AmanahItem,
   type Answer,
   type BboCard,
   type CardResult,
+  type MediaItem,
   type MurafaqatItem,
+  type ParentNote,
+  type QuranReport,
+  type ReadingLog,
   type SessionData,
+  type Signature,
+  type SignerRole,
+  type SubmissionStatus,
 } from "@/lib/bbo/types";
 import { AdabSlide, ClosingSlide, DialogCardSlide, MurafaqatSlide, OpeningSlide } from "./cards";
+import type { Recording } from "./media";
+import { AmanahSlide, CatatanSlide, KirimSlide, QuranSlide } from "./report-cards";
 
 type Group = "adab" | "iman" | "murafaqat" | "quran" | "amanah" | "catatan" | "kirim";
 
@@ -25,18 +37,30 @@ type Slide =
   | { key: "pembuka"; kind: "pembuka"; group: Group }
   | { key: string; kind: "card"; group: Group; card: BboCard; sectionTitle: string }
   | { key: string; kind: "murafaqat"; group: Group; item: MurafaqatItem; index: number; total: number }
-  | { key: "penutup"; kind: "penutup"; group: Group };
+  | { key: "quran" | "amanah" | "catatan" | "kirim" | "penutup"; kind: "quran" | "amanah" | "catatan" | "kirim" | "penutup"; group: Group };
 
-/** Penanda bagian di atas layar (PRD bagian 6). Qur'an–Kirim menyusul di Tahap 3. */
-const GROUPS: { id: Group; label: string; ready: boolean }[] = [
-  { id: "adab", label: "Adab", ready: true },
-  { id: "iman", label: "Iman", ready: true },
-  { id: "murafaqat", label: "Murafaqat", ready: true },
-  { id: "quran", label: "Qur'an", ready: false },
-  { id: "amanah", label: "Amanah", ready: false },
-  { id: "catatan", label: "Catatan", ready: false },
-  { id: "kirim", label: "Kirim", ready: false },
+/** Penanda bagian di atas layar (PRD bagian 6). */
+const GROUPS: { id: Group; label: string }[] = [
+  { id: "adab", label: "Adab" },
+  { id: "iman", label: "Iman" },
+  { id: "murafaqat", label: "Murafaqat" },
+  { id: "quran", label: "Qur'an" },
+  { id: "amanah", label: "Amanah" },
+  { id: "catatan", label: "Catatan" },
+  { id: "kirim", label: "Kirim" },
 ];
+
+/** Foto dikecilkan di HP sebelum diunggah: sisi panjang 1600 px, ±300 KB (OT-9). */
+async function compressPhoto(file: File) {
+  const { default: imageCompression } = await import("browser-image-compression");
+  return imageCompression(file, {
+    maxWidthOrHeight: 1600,
+    maxSizeMB: 0.3,
+    fileType: "image/jpeg",
+    initialQuality: 0.8,
+    useWebWorker: true,
+  });
+}
 
 function buildSlides(data: SessionData): Slide[] {
   const slides: Slide[] = [{ key: "adab", kind: "adab", group: "adab" }, { key: "pembuka", kind: "pembuka", group: "iman" }];
@@ -52,7 +76,13 @@ function buildSlides(data: SessionData): Slide[] {
   murafaqat.forEach((item, index) =>
     slides.push({ key: `murafaqat:${item.id}`, kind: "murafaqat", group: "murafaqat", item, index, total: murafaqat.length }),
   );
-  slides.push({ key: "penutup", kind: "penutup", group: "murafaqat" });
+  slides.push(
+    { key: "quran", kind: "quran", group: "quran" },
+    { key: "amanah", kind: "amanah", group: "amanah" },
+    { key: "catatan", kind: "catatan", group: "catatan" },
+    { key: "kirim", kind: "kirim", group: "kirim" },
+    { key: "penutup", kind: "penutup", group: "kirim" },
+  );
   return slides;
 }
 
@@ -79,7 +109,10 @@ function writeLocal(key: string, value: string) {
 export function BboSession({ data, demo = false }: { data: SessionData; demo?: boolean }) {
   const router = useRouter();
   const slides = useMemo(() => buildSlides(data), [data]);
-  const readOnly = data.submission?.status === "submitted" || data.submission?.status === "reviewed";
+  const [status, setStatus] = useState<SubmissionStatus>(data.submission?.status ?? "not_started");
+  const [submittedAt, setSubmittedAt] = useState<string | null>(data.submission?.submitted_at ?? null);
+  // Setelah dikirim jawaban terkunci; "Buka kembali" mungkin selama guru belum menanggapi (OT-12).
+  const readOnly = status === "submitted" || status === "reviewed";
 
   const store = useMemo<SessionStore>(
     () =>
@@ -95,6 +128,29 @@ export function BboSession({ data, demo = false }: { data: SessionData; demo?: b
   const [ready, setReady] = useState(false);
   const [showGuide, setShowGuide] = useState(true);
   const [save, setSave] = useState<SaveState>("idle");
+
+  const [quranReports, setQuranReports] = useState<QuranReport[]>(data.quranReports);
+  const [amanahDone, setAmanahDone] = useState<Record<string, boolean>>(data.amanahDone);
+  const [media, setMedia] = useState<MediaItem[]>(data.media);
+  const [parentNote, setParentNote] = useState<ParentNote>(data.parentNote);
+  const [signatures, setSignatures] = useState<Signature[]>(data.signatures);
+  const [readingLogs, setReadingLogs] = useState<ReadingLog[]>(data.readingLogs);
+  const [urls, setUrls] = useState<Record<string, string>>({});
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+
+  // Signed URL (berlaku 1 jam) untuk rekaman, foto, dan tanda tangan yang sudah tersimpan.
+  useEffect(() => {
+    const paths = [
+      ...data.media.map((m) => m.path),
+      ...data.quranReports.map((r) => r.audio_path).filter((p): p is string => Boolean(p)),
+      ...data.signatures.map((s) => s.image_path),
+    ];
+    if (paths.length === 0) return;
+    store
+      .signedUrls([...new Set(paths)])
+      .then((signed) => setUrls((prev) => ({ ...signed, ...prev })))
+      .catch(() => toast.error("Sebagian foto atau rekaman belum bisa dimuat. Periksa sinyal, lalu buka ulang."));
+  }, [data.media, data.quranReports, data.signatures, store]);
 
   // ---- Posisi awal: dari HP ini (localStorage), atau last_card_id di server (OT-6) ----
   useEffect(() => {
@@ -166,6 +222,15 @@ export function BboSession({ data, demo = false }: { data: SessionData; demo?: b
 
   // ---- Navigasi ----
   const slide = slides[index];
+  const navRef = useRef<HTMLElement>(null);
+  // Tab bagian yang aktif selalu terlihat di layar sempit.
+  useEffect(() => {
+    const nav = navRef.current;
+    const chip = nav?.querySelector<HTMLElement>('[aria-current="step"]');
+    if (nav && chip) {
+      nav.scrollLeft = chip.offsetLeft - nav.offsetLeft - (nav.clientWidth - chip.offsetWidth) / 2;
+    }
+  }, [slide?.group]);
   const go = useCallback(
     (next: number) => {
       const clamped = Math.max(0, Math.min(slides.length - 1, next));
@@ -208,6 +273,149 @@ export function BboSession({ data, demo = false }: { data: SessionData; demo?: b
     enqueue("adab", (id) => store.saveAdab(id, data.today, next));
   }
 
+  // ---- Operasi yang ditunggu (unggah, kirim): tampilkan proses dan pesan bila gagal ----
+  async function run<T>(key: string, failMessage: string, fn: (submissionId: string) => Promise<T>): Promise<T | null> {
+    setBusyKey(key);
+    try {
+      const id = await store.ensureSubmission();
+      submissionId.current = id;
+      return await fn(id);
+    } catch {
+      toast.error(failMessage);
+      return null;
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  async function addQuranReport(report: NewQuranReport, rec: Recording | null) {
+    const saved = await run("quran", "Laporan belum tersimpan. Periksa sinyal, lalu coba lagi.", async (id) => {
+      const audio = rec ? { path: await store.upload(id, "quran", rec.blob, rec.ext), bytes: rec.blob.size, durationSec: rec.durationSec } : null;
+      const row = await store.addQuranReport(id, report, audio);
+      void store.logEvent(id, "record", { quran_report_id: row.id, kind: row.kind, bytes: rec?.blob.size, duration_sec: row.duration_sec });
+      return { row, url: rec?.url };
+    });
+    if (!saved) return false;
+    setQuranReports((prev) => [...prev, saved.row]);
+    if (saved.row.audio_path && saved.url) setUrls((prev) => ({ ...prev, [saved.row.audio_path!]: saved.url! }));
+    toast.success("Laporan Qur'an tersimpan.");
+    return true;
+  }
+
+  async function deleteQuranReport(report: QuranReport) {
+    if (!window.confirm("Hapus laporan ini beserta rekamannya?")) return;
+    const ok = await run("quran", "Laporan belum terhapus. Coba lagi.", async () => {
+      await store.deleteQuranReport(report);
+      return true;
+    });
+    if (ok) {
+      setQuranReports((prev) => prev.filter((r) => r.id !== report.id));
+      setMedia((prev) => prev.filter((m) => m.path !== report.audio_path));
+    }
+  }
+
+  function toggleAmanah(item: AmanahItem) {
+    const done = !amanahDone[item.id];
+    setAmanahDone((prev) => ({ ...prev, [item.id]: done }));
+    enqueue(`amanah:${item.id}`, (id) => store.setAmanahDone(id, item.id, done));
+  }
+
+  async function addPhotos(key: string, folder: string, refTable: string, refId: string | null, files: File[]) {
+    const existing = media.filter((m) => m.ref_table === refTable && m.ref_id === refId).length;
+    const room = Math.max(0, MAX_PHOTOS - existing);
+    if (room === 0) return;
+    const added = await run(key, "Foto belum terunggah. Periksa sinyal, lalu coba lagi.", async (id) => {
+      const out: { item: MediaItem; url: string }[] = [];
+      for (const file of files.slice(0, room)) {
+        const small = await compressPhoto(file);
+        const path = await store.upload(id, folder, small, "jpg");
+        const item = await store.addMedia(id, { kind: "photo", path, bytes: small.size, ref_table: refTable, ref_id: refId });
+        out.push({ item, url: URL.createObjectURL(small) });
+      }
+      void store.logEvent(id, "photo", { ref_table: refTable, ref_id: refId, count: out.length });
+      return out;
+    });
+    if (!added) return;
+    setMedia((prev) => [...prev, ...added.map((a) => a.item)]);
+    setUrls((prev) => ({ ...prev, ...Object.fromEntries(added.map((a) => [a.item.path, a.url])) }));
+  }
+
+  async function deletePhoto(photo: MediaItem) {
+    const key = photo.ref_table === "parent_notes" ? "photo:catatan" : `photo:${photo.ref_id}`;
+    const ok = await run(key, "Foto belum terhapus. Coba lagi.", async () => {
+      await store.deleteMedia(photo);
+      return true;
+    });
+    if (ok) setMedia((prev) => prev.filter((m) => m.id !== photo.id));
+  }
+
+  function updateParentNote(next: ParentNote) {
+    setParentNote(next);
+    enqueue("parent_note", (id) => store.saveParentNote(id, next));
+  }
+
+  async function addReading(log: Omit<ReadingLog, "id">) {
+    const row = await run("reading", "Log baca belum tersimpan. Coba lagi.", () => store.addReadingLog(data.student.id, log));
+    if (!row) return false;
+    setReadingLogs((prev) => [row, ...prev].sort((a, b) => b.read_on.localeCompare(a.read_on)).slice(0, 5));
+    return true;
+  }
+
+  async function deleteReading(logId: string) {
+    const ok = await run("reading", "Log baca belum terhapus. Coba lagi.", async () => {
+      await store.deleteReadingLog(logId);
+      return true;
+    });
+    if (ok) setReadingLogs((prev) => prev.filter((l) => l.id !== logId));
+  }
+
+  async function sign(role: SignerRole, png: Blob) {
+    const saved = await run(`sign:${role}`, "Tanda tangan belum tersimpan. Coba lagi.", async (id) => {
+      const path = await store.upload(id, "ttd", png, "png");
+      const signedAt = await store.saveSignature(id, role, path);
+      return { path, signedAt };
+    });
+    if (!saved) return;
+    setSignatures((prev) => [...prev.filter((s) => s.role !== role), { role, image_path: saved.path, signed_at: saved.signedAt }]);
+    setUrls((prev) => ({ ...prev, [saved.path]: URL.createObjectURL(png) }));
+  }
+
+  async function unsign(sig: Signature) {
+    const ok = await run(`sign:${sig.role}`, "Tanda tangan belum terhapus. Coba lagi.", async (id) => {
+      await store.deleteSignature(id, sig.role, sig.image_path);
+      return true;
+    });
+    if (ok) setSignatures((prev) => prev.filter((s) => s.role !== sig.role));
+  }
+
+  async function submit() {
+    if (pending.current.size > 0) await flush();
+    if (pending.current.size > 0) {
+      toast.error("Masih ada jawaban yang belum tersimpan. Periksa sinyal, lalu coba lagi.");
+      return;
+    }
+    const at = await run("submit", "BBO belum terkirim. Periksa sinyal, lalu coba lagi.", async (id) => {
+      const when = await store.submit(id);
+      void store.logEvent(id, "submit");
+      return when;
+    });
+    if (!at) return;
+    setStatus("submitted");
+    setSubmittedAt(at);
+    toast.success("Alhamdulillah, BBO sudah terkirim kepada ustadzah.");
+  }
+
+  async function reopen() {
+    const ok = await run("reopen", "BBO belum bisa dibuka kembali. Mungkin ustadzah sudah menanggapi.", async (id) => {
+      await store.reopen(id);
+      void store.logEvent(id, "reopen");
+      return true;
+    });
+    if (!ok) return;
+    setStatus("in_progress");
+    setSubmittedAt(null);
+  }
+
   // ---- Ringkasan kartu Inti ----
   const intiCards = data.sections.filter((s) => s.kind === "iman").flatMap((s) => s.cards.filter((c) => c.tier === "inti"));
   const intiDone = intiCards.filter((c) => answers[c.id]).length;
@@ -237,7 +445,7 @@ export function BboSession({ data, demo = false }: { data: SessionData; demo?: b
             </Link>
           </Button>
         </div>
-        <nav aria-label="Bagian BBO" className="-mx-1 flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <nav ref={navRef} aria-label="Bagian BBO" className="-mx-1 flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {GROUPS.map((g) => {
             const active = slide?.group === g.id;
             const first = slides.findIndex((s) => s.group === g.id);
@@ -245,13 +453,12 @@ export function BboSession({ data, demo = false }: { data: SessionData; demo?: b
               <button
                 key={g.id}
                 type="button"
-                disabled={!g.ready || first < 0}
+                disabled={first < 0}
                 onClick={() => go(first)}
                 aria-current={active ? "step" : undefined}
                 className={cn(
                   "h-9 shrink-0 rounded-full px-3 text-sm font-medium",
                   active ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
-                  !g.ready && "text-muted-foreground/60",
                 )}
               >
                 {g.label}
@@ -264,9 +471,11 @@ export function BboSession({ data, demo = false }: { data: SessionData; demo?: b
         </div>
       </header>
 
-      {readOnly && (
+      {readOnly && slide?.kind !== "kirim" && (
         <p className="mx-4 mt-4 rounded-xl border bg-muted p-3 text-sm">
-          BBO ini sudah dikirim, jadi jawaban tidak bisa diubah lagi.
+          {status === "reviewed"
+            ? "BBO ini sudah ditanggapi ustadzah, jadi jawaban tidak bisa diubah lagi."
+            : "BBO ini sudah dikirim. Untuk mengubah, buka bagian Kirim lalu ketuk “Buka kembali”."}
         </p>
       )}
 
@@ -286,6 +495,60 @@ export function BboSession({ data, demo = false }: { data: SessionData; demo?: b
           />
         ) : slide.kind === "murafaqat" ? (
           <MurafaqatSlide item={slide.item} index={slide.index} total={slide.total} />
+        ) : slide.kind === "quran" ? (
+          <QuranSlide
+            targets={data.quranTargets}
+            reports={quranReports}
+            urls={urls}
+            readOnly={readOnly}
+            busy={busyKey === "quran"}
+            onAdd={addQuranReport}
+            onDelete={deleteQuranReport}
+          />
+        ) : slide.kind === "amanah" ? (
+          <AmanahSlide
+            items={data.amanah}
+            done={amanahDone}
+            photos={media}
+            urls={urls}
+            readingLogs={readingLogs}
+            today={data.today}
+            readOnly={readOnly}
+            busyKey={busyKey}
+            onToggle={toggleAmanah}
+            onAddPhotos={(item, files) => addPhotos(`photo:${item.id}`, `amanah/${item.id}`, "amanah_items", item.id, files)}
+            onDeletePhoto={deletePhoto}
+            onAddReading={addReading}
+            onDeleteReading={deleteReading}
+          />
+        ) : slide.kind === "catatan" ? (
+          <CatatanSlide
+            note={parentNote}
+            photos={media.filter((m) => m.ref_table === "parent_notes")}
+            urls={urls}
+            readOnly={readOnly}
+            busy={busyKey === "photo:catatan"}
+            onChange={updateParentNote}
+            onAddPhotos={(files) => addPhotos("photo:catatan", "catatan", "parent_notes", null, files)}
+            onDeletePhoto={deletePhoto}
+          />
+        ) : slide.kind === "kirim" ? (
+          <KirimSlide
+            intiTotal={intiCards.length}
+            intiBisa={intiBisa}
+            recordings={quranReports.filter((r) => r.audio_path).length}
+            photoCount={media.filter((m) => m.kind === "photo").length}
+            signatures={signatures}
+            urls={urls}
+            firstRole={data.relation === "ibu" ? "ibu" : "ayah"}
+            status={status}
+            submittedAt={submittedAt}
+            busyKey={busyKey}
+            onSign={sign}
+            onUnsign={unsign}
+            onSubmit={submit}
+            onReopen={reopen}
+          />
         ) : (
           <ClosingSlide
             nickname={name}

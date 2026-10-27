@@ -24,6 +24,16 @@ Stack: Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui, Supabase (Au
 - [x] Lanjut dari kartu terakhir: posisi di HP (localStorage) + `submissions.last_card_id` di server
 - [x] Pratinjau tanpa login saat pengembangan: http://localhost:3000/dev/sesi (penyimpanan di memori)
 
+## Status: Tahap 3 — Qur'an, amanah, catatan, tanda tangan
+
+- [x] Laporan Qur'an (tilawah / tahfidz / murajaah, surat & ayat, kelancaran) + rekam suara di aplikasi,
+      maks. 3 menit, Opus 24 kbps (±360 KB untuk 2 menit; iPhone memakai audio/mp4), putar ulang sebelum simpan
+- [x] Amanah: centang, foto lembar amanah dikompres di HP (sisi panjang ≤ 1600 px, ±300 KB), maks. 5 foto
+- [x] Log baca (Bacalah 1/2/3 / buku lain) berlanjut lintas pekan
+- [x] Catatan orang tua: kendala & tindakan/solusi + foto
+- [x] Tanda tangan Ayah/Ibu (kanvas → PNG di bucket privat), Kirim, Buka kembali selama belum ditanggapi
+- [x] File dibaca lewat signed URL 1 jam; event `record`, `photo`, `submit`, `reopen` di `event_log`
+
 ## Menjalankan di komputer
 
 ```bash
