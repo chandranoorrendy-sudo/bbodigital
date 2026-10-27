@@ -37,7 +37,7 @@ function CheckRow({
       onClick={onToggle}
       className={cn(
         "flex min-h-14 w-full items-center gap-3 rounded-xl border px-4 text-left text-base transition-colors disabled:opacity-60",
-        checked ? "border-primary bg-primary/10" : "bg-background hover:bg-muted",
+        checked ? "border-primary bg-gold-soft" : "bg-background hover:bg-muted",
       )}
     >
       <span
@@ -98,7 +98,7 @@ export function OpeningSlide({ sheet, showGuide }: { sheet: SheetInfo; showGuide
   return (
     <div className="space-y-5">
       <header className="space-y-2">
-        <p className="text-sm font-medium text-primary">Pekan ini Ananda belajar</p>
+        <p className="text-sm font-medium text-gold-ink">Pekan ini Ananda belajar</p>
         <h2 className="text-2xl font-semibold">{sheet.title}</h2>
         <p className="text-muted-foreground">
           {rentangTanggal(sheet.start_date, sheet.end_date)}
@@ -308,8 +308,8 @@ export function MurafaqatSlide({ item, index, total }: { item: MurafaqatItem; in
         <p className="leading-relaxed">{item.learned}</p>
       </section>
       {item.home_practice && (
-        <section className="space-y-1 rounded-xl border border-primary/30 bg-primary/5 p-4">
-          <h3 className="text-sm font-medium text-primary">Yang bisa dilatih di rumah</h3>
+        <section className="space-y-1 rounded-xl border border-gold/60 bg-gold-soft p-4">
+          <h3 className="text-sm font-medium text-gold-ink">Yang bisa dilatih di rumah</h3>
           <p className="leading-relaxed">{item.home_practice}</p>
         </section>
       )}

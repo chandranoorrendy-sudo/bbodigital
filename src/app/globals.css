@@ -50,19 +50,26 @@
   /* Ungu khusus "jawaban yang diharapkan", melanjutkan kebiasaan BBO cetak. */
   --color-expected: var(--expected);
   --color-expected-soft: var(--expected-soft);
+  /* Warna Kuttab Imam Al-Ghazali: hitam & emas. */
+  --color-gold: var(--gold);
+  --color-gold-ink: var(--gold-ink);
+  --color-gold-soft: var(--gold-soft);
 }
 
 :root {
   --expected: oklch(0.45 0.2 300);
   --expected-soft: oklch(0.96 0.03 300);
-  --background: oklch(0.99 0.004 140);
+  --gold: oklch(0.76 0.13 84);
+  --gold-ink: oklch(0.5 0.1 75);
+  --gold-soft: oklch(0.965 0.035 90);
+  --background: oklch(0.985 0.006 90);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.39 0.09 150);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.2 0.006 60);
+  --primary-foreground: oklch(0.87 0.11 88);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -72,7 +79,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --ring: oklch(0.76 0.13 84);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);

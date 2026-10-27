@@ -152,7 +152,7 @@ async function StudentHome({ student }: { student: Student }) {
       </section>
 
       {sheet ? (
-        <Card className="border-primary/30">
+        <Card className="border-gold/60">
           <CardHeader className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">Lembar {sheet.sheet_no}</Badge>
@@ -174,7 +174,7 @@ async function StudentHome({ student }: { student: Student }) {
               </p>
               <div className="h-3 overflow-hidden rounded-full bg-muted" aria-hidden>
                 <div
-                  className="h-full rounded-full bg-primary"
+                  className="h-full rounded-full bg-gold"
                   style={{ width: `${totalInti ? Math.round((answeredInti / totalInti) * 100) : 0}%` }}
                 />
               </div>
@@ -214,7 +214,7 @@ async function StudentHome({ student }: { student: Student }) {
                 </p>
               )}
               {feedback.map((f) => (
-                <div key={f.id} className="space-y-1 border-l-4 border-primary/40 pl-3">
+                <div key={f.id} className="space-y-1 border-l-4 border-gold pl-3">
                   <p className="text-sm font-medium text-primary">
                     {f.subject === "iman" ? `Guru Iman${guruIman ? ` · ${guruIman}` : ""}` : `Guru Qur'an${guruQuran ? ` · ${guruQuran}` : ""}`}
                   </p>

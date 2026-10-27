@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "BBO Kuttab",
     start_url: "/",
     display: "standalone",
-    background_color: "#fbfdfb",
-    theme_color: "#14532d",
+    background_color: "#faf8f2",
+    theme_color: "#1a1814",
     lang: "id",
   };
 }

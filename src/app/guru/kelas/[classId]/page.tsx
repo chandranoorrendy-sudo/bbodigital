@@ -13,7 +13,7 @@ const STATUS_STYLE: Record<string, string> = {
   not_started: "bg-muted text-muted-foreground",
   in_progress: "bg-secondary text-secondary-foreground",
   submitted: "bg-primary text-primary-foreground",
-  reviewed: "border border-primary/40 text-primary",
+  reviewed: "border border-gold text-gold-ink",
 };
 
 export default async function KelasPage({
@@ -75,7 +75,7 @@ export default async function KelasPage({
                   href={q({ tab: t })}
                   className={cn(
                     "-mb-px border-b-2 px-3 py-3 font-medium",
-                    tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground",
+                    tab === t ? "border-gold text-foreground" : "border-transparent text-muted-foreground",
                   )}
                 >
                   {t === "status" ? "Status kelas" : "Rekap pertanyaan"}
@@ -219,7 +219,7 @@ function Rekap({ cards, rows }: { cards: (import("@/lib/bbo/types").BboCard & { 
                   key={r}
                   className={cn(
                     "rounded-full px-3 py-1 font-medium",
-                    r === "bisa" ? "bg-primary/10 text-primary" : r === "perlu_bantuan" ? "bg-destructive/10 text-destructive" : "bg-muted",
+                    r === "bisa" ? "bg-gold-soft text-foreground" : r === "perlu_bantuan" ? "bg-destructive/10 text-destructive" : "bg-muted",
                   )}
                 >
                   {RESULT_LABEL[r]}: {counts[r].length}

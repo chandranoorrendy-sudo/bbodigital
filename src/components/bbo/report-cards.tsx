@@ -134,8 +134,8 @@ export function QuranSlide({
       </header>
 
       {targets.length > 0 && (
-        <section className="space-y-1 rounded-xl border border-primary/30 bg-primary/5 p-4">
-          <h3 className="text-sm font-medium text-primary">Target pekan ini</h3>
+        <section className="space-y-1 rounded-xl border border-gold/60 bg-gold-soft p-4">
+          <h3 className="text-sm font-medium text-gold-ink">Target pekan ini</h3>
           <ul className="list-disc space-y-1 pl-5">
             {targets.map((t) => (
               <li key={t.id}>
@@ -567,7 +567,7 @@ export function KirimSlide({
       {!sent && <p className="text-sm text-muted-foreground">Cukup salah satu, Ayah atau Ibu.</p>}
 
       {sent ? (
-        <section className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+        <section className="space-y-3 rounded-xl border border-gold/60 bg-gold-soft p-4">
           <p className="font-medium text-primary">
             {status === "reviewed" ? "BBO sudah ditanggapi ustadzah." : "BBO sudah dikirim."}
           </p>

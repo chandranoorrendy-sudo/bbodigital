@@ -55,7 +55,7 @@ export function FeedbackPanel({
   const subjects: Subject[] = (["iman", "quran"] as Subject[]).filter((s) => mySubjects.includes(s));
 
   return (
-    <section className="space-y-4 rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
+    <section className="space-y-4 rounded-xl border-2 border-gold/60 bg-gold-soft p-4">
       <h2 className="text-lg font-semibold">Tanggapan &amp; paraf</h2>
 
       {/* Tanggapan yang sudah ada, dari semua guru */}

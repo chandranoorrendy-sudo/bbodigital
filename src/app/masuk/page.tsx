@@ -40,7 +40,7 @@ export default function MasukPage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-8 px-5 py-10">
       <header className="space-y-2 text-center">
-        <p className="text-sm font-medium tracking-wide text-primary">Kuttab Imam Al-Ghazali</p>
+        <p className="text-sm font-medium tracking-wide text-gold-ink">Kuttab Imam Al-Ghazali</p>
         <h1 className="text-2xl font-semibold">Belajar Bersama Orang Tua</h1>
         <p className="text-muted-foreground">Masuk dengan username dan kata sandi dari ustadz/ustadzah.</p>
       </header>

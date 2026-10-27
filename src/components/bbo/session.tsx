@@ -431,7 +431,7 @@ export function BboSession({ data, demo = false }: { data: SessionData; demo?: b
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col">
-      <header className="sticky top-0 z-10 space-y-3 border-b bg-background/95 px-4 pt-3 pb-3 backdrop-blur">
+      <header className="sticky top-0 z-10 space-y-3 border-b-2 border-gold bg-background/95 px-4 pt-3 pb-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate font-semibold">
@@ -467,7 +467,7 @@ export function BboSession({ data, demo = false }: { data: SessionData; demo?: b
           })}
         </nav>
         <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
-          <div className="h-full bg-primary transition-all" style={{ width: `${((index + 1) / slides.length) * 100}%` }} />
+          <div className="h-full bg-gold transition-all" style={{ width: `${((index + 1) / slides.length) * 100}%` }} />
         </div>
       </header>
 
