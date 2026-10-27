@@ -20,14 +20,15 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const { tab: rawTab } = await searchParams;
   const tab = TABS.find((t) => t.id === rawTab)?.id ?? "akun";
 
-  const [{ data: profiles }, { data: guardians }, { data: students }, { data: classes }, { data: years }, { data: classTeachers }] =
+  const [{ data: profiles }, { data: guardians }, { data: students }, { data: classes }, { data: years }, { data: classTeachers }, { data: unmatchedMetiq }] =
     await Promise.all([
       supabase.from("profiles").select("id, full_name, username, role").order("full_name"),
       supabase.from("guardians").select("id, profile_id, student_id, relation"),
-      supabase.from("students").select("id, full_name, nickname, class_id, birth_year, research_consent, consent_signed_at").order("full_name"),
+      supabase.from("students").select("id, full_name, nickname, class_id, birth_year, nisn, research_consent, consent_signed_at").order("full_name"),
       supabase.from("classes").select("id, name, level, section, academic_year_id").order("name"),
       supabase.from("academic_years").select("id, label, start_date, end_date, is_active").order("start_date", { ascending: false }),
       supabase.from("class_teachers").select("id, class_id, teacher_id, subject, is_homeroom"),
+      supabase.from("metiq_reports").select("id, nisn, completed_at, report").is("student_id", null).order("completed_at", { ascending: false }).limit(200),
     ]);
 
   const data: AdminData = {
@@ -38,6 +39,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     classes: (classes ?? []) as AdminData["classes"],
     years: (years ?? []) as AdminData["years"],
     classTeachers: (classTeachers ?? []) as AdminData["classTeachers"],
+    unmatchedMetiq: (unmatchedMetiq ?? []) as AdminData["unmatchedMetiq"],
   };
 
   return (

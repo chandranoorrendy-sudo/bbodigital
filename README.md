@@ -55,6 +55,50 @@ Stack: Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui, Supabase (Au
       service key), tautan orang tua–santri, santri & persetujuan penelitian, kelas & penugasan guru, tahun ajaran
 - [x] Pratinjau tanpa login saat pengembangan: `/dev/editor`
 
+## Integrasi Metiq — laporan PR matematika
+
+Metiq (https://metiq-math.vercel.app) mengirim laporan setiap kali santri menuntaskan tugas matematika
+(semua keterampilan SmartScore ≥ 80, atau ditandai selesai oleh orang tua). Santri dicocokkan lewat **NISN**.
+
+- `students.nisn` (10 digit, unik) diisi admin di `/admin` → Santri.
+- Metiq memanggil `POST https://lzceknfriyavdvvvvjgq.supabase.co/rest/v1/rpc/metiq_ingest` dengan header
+  `apikey: <publishable key BBO>` dan isi `{"p_secret": "...", "p_report": {...}}`. Fungsi ini memeriksa
+  `sha256(p_secret)` terhadap `integration_secrets` (`name = 'metiq'`), menyimpan ke `metiq_reports`
+  (kiriman ulang dengan `id` sama hanya memperbarui), dan membalas `{"ok": true, "matched": true|false}`.
+- Laporan dengan NISN yang belum terdaftar tetap disimpan dan tampil di admin sebagai **Laporan Metiq belum cocok**;
+  begitu NISN diisi, laporan tertaut otomatis.
+- Tampil di laporan santri untuk guru (`/guru/laporan/[id]`, bagian 📐 Laporan Metiq) dan di beranda orang tua.
+  Hanya guru kelas santri, orang tuanya, dan admin yang bisa membaca; tidak ada yang bisa menulis langsung.
+- Uji: jalankan `supabase/tests/metiq_test.sql` di SQL Editor (semua baris harus `LULUS`, semua di-rollback).
+
+### Menyambungkan (sekali saja)
+
+1. **Di SQL Editor BBO** (project `lzceknfriyavdvvvvjgq`), buat rahasia acak dan simpan hash-nya. Rahasia asli hanya
+   tampil sekali di hasil query — salin sekarang:
+
+   ```sql
+   with s as (select encode(extensions.gen_random_bytes(32), 'hex') as rahasia),
+        simpan as (
+          insert into public.integration_secrets (name, secret_hash)
+          select 'metiq', encode(sha256(convert_to(rahasia, 'UTF8')), 'hex') from s
+          on conflict (name) do update set secret_hash = excluded.secret_hash
+        )
+   select rahasia from s;
+   ```
+
+2. **Di SQL Editor Metiq**, tempel rahasia tadi (publishable key BBO memang boleh publik):
+
+   ```sql
+   insert into public.integrations (name, url, apikey, secret)
+   values ('bbo', 'https://lzceknfriyavdvvvvjgq.supabase.co', 'sb_publishable_nl6O2vlu_hx-3EHQqSWhOw_FI-ndT5b', '<rahasia>')
+   on conflict (name) do update set url = excluded.url, apikey = excluded.apikey, secret = excluded.secret, enabled = true;
+   ```
+
+3. Isi NISN santri di BBO (`/admin` → Santri) dan di Metiq. Tugas yang tuntas berikutnya akan muncul di BBO;
+   di Metiq statusnya menjadi "Diterima".
+
+Mengganti rahasia: ulangi langkah 1 dan 2. Rahasia lama langsung tidak berlaku.
+
 ## Menjalankan di komputer
 
 ```bash
@@ -111,5 +155,5 @@ src/app/guru           kelas saya (jumlah status, tanpa skor)
 src/middleware.ts      penyegaran sesi + wajib login
 supabase/migrations    skema, RLS, storage, fungsi
 supabase/seed.sql      data contoh rekaan
-supabase/tests         uji RLS
+supabase/tests         uji RLS, uji integrasi Metiq
 ```

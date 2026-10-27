@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { FeedbackPanel } from "@/components/guru/feedback-panel";
 import { GuruHeader } from "@/components/guru/header";
+import { METIQ_SELECT, MetiqReportList, type MetiqRow } from "@/components/metiq/reports";
 import { getCurrentProfile } from "@/lib/supabase/server";
 import { STATUS_LAPORAN, rentangTanggal } from "@/lib/format";
 import { surahName } from "@/lib/bbo/surah";
@@ -66,7 +67,7 @@ export default async function LaporanPage({ params }: { params: Promise<{ submis
   const report = data as unknown as Report | null;
   if (!report) notFound();
 
-  const [{ data: sections }, { data: amanah }, { data: mine }, { data: readingLogs }, { data: siblings }] = await Promise.all([
+  const [{ data: sections }, { data: amanah }, { data: mine }, { data: readingLogs }, { data: siblings }, { data: metiq }] = await Promise.all([
     supabase
       .from("bbo_sections")
       .select("title, cards:bbo_cards(id, position, tier, dimension, prompt, expected_answer)")
@@ -87,6 +88,12 @@ export default async function LaporanPage({ params }: { params: Promise<{ submis
       .select("id, status, student:students(full_name)")
       .eq("sheet_id", report.sheet.id)
       .eq("status", "submitted"),
+    supabase
+      .from("metiq_reports")
+      .select(METIQ_SELECT)
+      .eq("student_id", report.student.id)
+      .order("completed_at", { ascending: false, nullsFirst: false })
+      .limit(10),
   ]);
 
   // Laporan berikutnya yang menunggu tanggapan (urut nama), untuk menanggapi beruntun.
@@ -233,6 +240,11 @@ export default async function LaporanPage({ params }: { params: Promise<{ submis
               ))}
             </div>
           )}
+        </Block>
+
+        <Block title="📐 Laporan Metiq">
+          <p className="-mt-2 text-sm text-muted-foreground">PR matematika yang sudah tuntas di Metiq (SmartScore ≥ 80 atau ditandai orang tua).</p>
+          <MetiqReportList rows={(metiq ?? []) as MetiqRow[]} />
         </Block>
 
         <Block title="Catatan orang tua">

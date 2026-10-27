@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/app-header";
+import { METIQ_SELECT, MetiqReportSummary, type MetiqRow } from "@/components/metiq/reports";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -127,6 +128,14 @@ async function StudentHome({ student }: { student: Student }) {
     .eq("submissions.student_id", student.id)
     .order("created_at", { ascending: false })
     .limit(10);
+  const { data: metiqRows } = await supabase
+    .from("metiq_reports")
+    .select(METIQ_SELECT)
+    .eq("student_id", student.id)
+    .order("completed_at", { ascending: false, nullsFirst: false })
+    .limit(3);
+  const metiq = (metiqRows ?? []) as MetiqRow[];
+
   const latestSubmission = feedbackRows?.[0]?.submission_id;
   const feedback = (feedbackRows ?? [])
     .filter((f) => f.submission_id === latestSubmission)
@@ -231,6 +240,17 @@ async function StudentHome({ student }: { student: Student }) {
           )}
         </CardContent>
       </Card>
+
+      {metiq.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">📐 PR matematika (Metiq)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MetiqReportSummary rows={metiq} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

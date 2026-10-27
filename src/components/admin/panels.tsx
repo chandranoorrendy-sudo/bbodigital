@@ -17,9 +17,11 @@ export type AdminData = {
     nickname: string | null;
     class_id: string | null;
     birth_year: number | null;
+    nisn: string | null;
     research_consent: boolean;
     consent_signed_at: string | null;
   }[];
+  unmatchedMetiq: { id: string; nisn: string; completed_at: string | null; report: { student_name?: string; class_name?: string; assignment?: { note?: string | null } } }[];
   classes: { id: string; name: string; level: string; section: string; academic_year_id: string }[];
   years: { id: string; label: string; start_date: string; end_date: string; is_active: boolean }[];
   classTeachers: { id: string; class_id: string; teacher_id: string; subject: "iman" | "quran"; is_homeroom: boolean }[];
@@ -349,11 +351,13 @@ export function StudentsPanel({ data }: { data: AdminData }) {
   const [nickname, setNickname] = useState("");
   const [classId, setClassId] = useState(data.classes[0]?.id ?? "");
   const [birthYear, setBirthYear] = useState("");
+  const [nisn, setNisn] = useState("");
 
   const byClass = [...data.classes.map((c) => ({ id: c.id as string | null, name: c.name })), { id: null, name: "Tanpa kelas" }];
 
   return (
     <div className="space-y-6">
+      <UnmatchedMetiq rows={data.unmatchedMetiq} />
       <form
         className="space-y-3 rounded-xl border bg-background p-4"
         onSubmit={async (e) => {
@@ -364,12 +368,14 @@ export function StudentsPanel({ data }: { data: AdminData }) {
               nickname: nickname.trim() || null,
               class_id: classId || null,
               birth_year: birthYear ? Number(birthYear) : null,
+              nisn: nisn || null,
             }),
           );
           if (ok) {
             setName("");
             setNickname("");
             setBirthYear("");
+            setNisn("");
           }
         }}
       >
@@ -389,7 +395,14 @@ export function StudentsPanel({ data }: { data: AdminData }) {
           </select>
           <input className={field} inputMode="numeric" placeholder="Tahun lahir" value={birthYear} onChange={(e) => setBirthYear(e.target.value.replace(/\D/g, "").slice(0, 4))} />
         </div>
-        <Button type="submit" size="xl" className="w-full" disabled={!name.trim() || busy === "add"}>
+        <input
+          className={cn(field, "font-mono")}
+          inputMode="numeric"
+          placeholder="NISN (10 digit, untuk laporan Metiq; bisa nanti)"
+          value={nisn}
+          onChange={(e) => setNisn(e.target.value.replace(/\D/g, "").slice(0, 10))}
+        />
+        <Button type="submit" size="xl" className="w-full" disabled={!name.trim() || (nisn.length > 0 && nisn.length !== 10) || busy === "add"}>
           {busy === "add" ? "Menyimpan…" : "Tambah santri"}
         </Button>
       </form>
@@ -416,6 +429,7 @@ export function StudentsPanel({ data }: { data: AdminData }) {
                       </p>
                       <p className="text-sm text-muted-foreground">Akun orang tua: {parents.length ? parents.join(", ") : "belum ada"}</p>
                     </div>
+                    <NisnInput key={s.nisn ?? ""} studentId={s.id} value={s.nisn} />
                     <select
                       className={cn(field, "h-10 w-auto")}
                       value={s.class_id ?? ""}
@@ -453,6 +467,62 @@ export function StudentsPanel({ data }: { data: AdminData }) {
         );
       })}
     </div>
+  );
+}
+
+function NisnInput({ studentId, value }: { studentId: string; value: string | null }) {
+  const { supabase, busy, run } = useMutation();
+  const [nisn, setNisn] = useState(value ?? "");
+  const changed = nisn !== (value ?? "");
+  const valid = nisn.length === 0 || nisn.length === 10;
+  return (
+    <div className="flex items-center gap-1">
+      <input
+        className={cn(field, "h-10 w-36 font-mono", !valid && "border-destructive")}
+        inputMode="numeric"
+        placeholder="NISN"
+        aria-label="NISN"
+        value={nisn}
+        onChange={(e) => setNisn(e.target.value.replace(/\D/g, "").slice(0, 10))}
+      />
+      {changed && (
+        <Button
+          className="h-10"
+          disabled={!valid || busy === "nisn"}
+          onClick={() => run("nisn", "Menyimpan NISN", () => supabase.from("students").update({ nisn: nisn || null }).eq("id", studentId))}
+        >
+          Simpan
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// Laporan Metiq yang NISN-nya belum dimiliki santri mana pun. Begitu NISN diisi, laporan tertaut otomatis.
+function UnmatchedMetiq({ rows }: { rows: AdminData["unmatchedMetiq"] }) {
+  if (rows.length === 0) return null;
+  const byNisn = new Map<string, AdminData["unmatchedMetiq"]>();
+  for (const r of rows) byNisn.set(r.nisn, [...(byNisn.get(r.nisn) ?? []), r]);
+  return (
+    <section className="space-y-2 rounded-xl border-2 border-gold bg-gold-soft p-4">
+      <h2 className="text-lg font-semibold">📐 Laporan Metiq belum cocok</h2>
+      <p className="text-sm text-muted-foreground">
+        Laporan PR matematika ini datang dari Metiq dengan NISN yang belum terdaftar di BBO. Isi NISN santri di bawah; laporannya akan tertaut otomatis.
+      </p>
+      <ul className="divide-y rounded-lg border bg-background">
+        {[...byNisn.entries()].map(([nisn, list]) => (
+          <li key={nisn} className="px-3 py-2">
+            <p>
+              <span className="font-mono font-semibold">{nisn}</span> · {list[0].report.student_name ?? "?"}
+              {list[0].report.class_name && <span className="text-muted-foreground"> ({list[0].report.class_name} di Metiq)</span>}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {list.length} laporan · terakhir: {list[0].report.assignment?.note || "Tugas matematika"}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

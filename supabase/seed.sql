@@ -330,3 +330,35 @@ begin
     ('30000000-0000-4000-8000-000000000002', 'bacalah_2', 14, current_date - 1, 'a0000000-0000-4000-8000-00000000000a'),
     ('30000000-0000-4000-8000-000000000003', 'bacalah_2', 9,  current_date - 1, 'a0000000-0000-4000-8000-00000000000b');
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- Contoh laporan Metiq (PR matematika). Zaid (rekaan) diberi NISN uji;
+-- satu laporan sengaja memakai NISN yang belum terdaftar (muncul di admin).
+-- ---------------------------------------------------------------------------
+update public.students set nisn = '9990000003' where id = '30000000-0000-4000-8000-000000000003';
+
+insert into public.metiq_reports (metiq_id, nisn, student_id, report, completed_at) values
+  ('contoh-1:zaid', '9990000003', '30000000-0000-4000-8000-000000000003', jsonb_build_object(
+     'id', 'contoh-1:zaid', 'source', 'metiq', 'nisn', '9990000003', 'student_name', 'Zaid', 'class_name', 'Kelas 2B',
+     'teacher_name', 'Bu Diana',
+     'assignment', jsonb_build_object('note', 'Latihan membaca jam', 'due', '2026-11-05', 'created_at', '2026-10-26T01:00:00Z', 'targeted', false),
+     'completed_at', '2026-10-27T11:20:00Z', 'done_by', 'siswa',
+     'skills', jsonb_build_array(
+       jsonb_build_object('id', 'K1', 'code', 'K.1', 'name', 'Membaca jam (tepat)', 'grade', 1, 'score', 85, 'attempts', 14, 'correct', 12),
+       jsonb_build_object('id', 'K2', 'code', 'K.2', 'name', 'Membaca jam (setengah)', 'grade', 1, 'score', 81, 'attempts', 18, 'correct', 14)),
+     'link', 'https://metiq-math.vercel.app/'), '2026-10-27T11:20:00Z'),
+  ('contoh-2:zaid', '9990000003', '30000000-0000-4000-8000-000000000003', jsonb_build_object(
+     'id', 'contoh-2:zaid', 'source', 'metiq', 'nisn', '9990000003', 'student_name', 'Zaid', 'class_name', 'Kelas 2B',
+     'teacher_name', 'Bu Diana',
+     'assignment', jsonb_build_object('note', 'Penjumlahan sampai 20', 'due', '2026-10-30', 'created_at', '2026-10-23T01:00:00Z', 'targeted', true),
+     'completed_at', '2026-10-25T09:05:00Z', 'done_by', 'ortu',
+     'skills', '[]'::jsonb,
+     'link', 'https://metiq-math.vercel.app/'), '2026-10-25T09:05:00Z'),
+  ('contoh-3:belum', '9990000099', null, jsonb_build_object(
+     'id', 'contoh-3:belum', 'source', 'metiq', 'nisn', '9990000099', 'student_name', 'Alya (contoh)', 'class_name', 'Kelas 1A',
+     'teacher_name', 'Bu Diana',
+     'assignment', jsonb_build_object('note', 'Mengenal bilangan 1–10', 'due', '2026-10-31', 'created_at', '2026-10-24T01:00:00Z', 'targeted', false),
+     'completed_at', '2026-10-27T08:00:00Z', 'done_by', 'siswa',
+     'skills', jsonb_build_array(jsonb_build_object('id', 'A1', 'code', 'A.1', 'name', 'Membilang benda', 'grade', 1, 'score', 90, 'attempts', 10, 'correct', 10)),
+     'link', 'https://metiq-math.vercel.app/'), '2026-10-27T08:00:00Z')
+on conflict (metiq_id) do nothing;
