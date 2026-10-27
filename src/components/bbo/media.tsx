@@ -247,7 +247,7 @@ export function SignatureBox({
   const signed = Boolean(signedAt);
 
   return (
-    <div className="space-y-2 rounded-xl border bg-background p-4">
+    <div data-no-swipe className="space-y-2 rounded-xl border bg-background p-4">
       <div className="flex items-center justify-between">
         <p className="font-medium">{title}</p>
         {signed && !editing && (

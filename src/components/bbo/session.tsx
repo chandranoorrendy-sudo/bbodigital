@@ -247,7 +247,8 @@ export function BboSession({ data, demo = false }: { data: SessionData; demo?: b
 
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   function onTouchStart(e: React.TouchEvent) {
-    if ((e.target as HTMLElement).closest("textarea, input, button, summary")) return;
+    // Jangan anggap geseran sebagai pindah kartu saat menulis tanda tangan, menggeser pemutar audio, dsb.
+    if ((e.target as HTMLElement).closest("textarea, input, button, summary, select, canvas, audio, [data-no-swipe]")) return;
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }
   function onTouchEnd(e: React.TouchEvent) {
