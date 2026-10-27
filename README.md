@@ -99,19 +99,15 @@ Metiq (https://metiq-math.vercel.app) mengirim laporan setiap kali santri menunt
 
 Mengganti rahasia: ulangi langkah 1 dan 2. Rahasia lama langsung tidak berlaku.
 
-## Impor AI, formulir KA2A, dan kisi-kisi
+## Formulir KA2A dan kisi-kisi
 
-- [x] Impor BBO dari PDF / DOCX / foto (`/api/impor`, Claude Opus 5.5, structured output): draf dengan kartu
-      Inti / Pengayaan / Untuk Ayah Bunda sesuai PRD bagian 4, murafaqat, amanah, target Qur'an, mutaba'ah, adab.
-      DOCX: teks ungu ditandai sebagai jawaban yang diharapkan. Nama santri & nomor HP tidak disalin. Hasil selalu draf.
-- [x] Formulir baru: foto hasil kerja per murafaqat (mis. tulisan huruf), Lembar Mutaba'ah Al-Qur'an
+BBO dan kisi-kisi disusun ustadz/ustadzah langsung di editor web (tanpa impor otomatis dari PDF/foto).
+
+- [x] Formulir: foto hasil kerja per murafaqat (mis. tulisan huruf), Lembar Mutaba'ah Al-Qur'an
       (Makharijul Huruf, Shifatul Huruf, Itmamul Harokat, Mad, Ghunnah, Kelancaran), Riaayah Adab
       (selalu/sering/jarang/tidak pernah).
-- [x] Kisi-kisi ujian semester: guru `/guru/kisi` (ketik atau impor AI), orang tua `/kisi?anak=` (centang
-      "sudah dilatih di rumah", hanya dibandingkan dengan diri sendiri).
-- Perlu **`ANTHROPIC_API_KEY`** di Environment Variables Vercel (server saja, jangan `NEXT_PUBLIC_`). Tanpa kunci,
-  tombol impor menampilkan pesan bahwa fitur belum aktif; fitur lain tetap jalan.
-- Cek lokal tanpa memanggil API: `npx tsx scripts/check-import.ts "<file.docx>"`.
+- [x] Kisi-kisi ujian semester: guru `/guru/kisi`, orang tua `/kisi?anak=` (centang "sudah dilatih di rumah",
+      hanya dibandingkan dengan diri sendiri).
 
 ## Menjalankan di komputer
 

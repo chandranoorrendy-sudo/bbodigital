@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ImportFileForm } from "@/components/editor/import-form";
 import { GuruHeader } from "@/components/guru/header";
 import { KisiManager } from "@/components/kisi/manager";
 import { getCurrentProfile } from "@/lib/supabase/server";
@@ -59,7 +58,6 @@ export default async function GuruKisiPage({ searchParams }: { searchParams: Pro
               Kisi-kisi tampil di HP orang tua. Orang tua bisa mencentang poin yang sudah dilatih di rumah; centang itu tidak
               dibandingkan antarsantri.
             </p>
-            <ImportFileForm kind="kisi" classId={current.id} />
             <KisiManager classId={current.id} items={(items ?? []) as KisiItem[]} />
           </>
         )}
