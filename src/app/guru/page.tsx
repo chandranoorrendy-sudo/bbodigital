@@ -39,6 +39,16 @@ export default async function GuruPage() {
   return (
     <div className="mx-auto min-h-dvh max-w-3xl">
       <AppHeader name={profile.full_name} subtitle={profile.role === "admin" ? "Admin kuttab" : "Kelas saya"} />
+      <nav className="flex flex-wrap gap-2 px-4 pt-5">
+        <Button asChild variant="outline" className="h-11">
+          <Link href="/guru/bbo">Penyusun BBO</Link>
+        </Button>
+        {profile.role === "admin" && (
+          <Button asChild variant="outline" className="h-11">
+            <Link href="/admin">Admin kuttab</Link>
+          </Button>
+        )}
+      </nav>
       <main className="grid gap-4 px-4 py-5 sm:grid-cols-2">
         {classes.length === 0 && (
           <p className="text-muted-foreground">Belum ada kelas yang ditugaskan kepada Anda.</p>

@@ -45,6 +45,16 @@ Stack: Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui, Supabase (Au
 - [x] Rekap per pertanyaan: ✓ / ○ / ○ bantuan per kartu; nama santri hanya tampil bila rincian dibuka
 - [x] Beranda orang tua menampilkan tanggapan Iman & Qur'an terbaru
 
+## Status: Tahap 5 — Penyusun BBO & admin
+
+- [x] Penyusun BBO `/guru/bbo`: buat baru (kop + bagian standar), salin dari kelas lain/tahun lalu (draf)
+- [x] Editor `/guru/bbo/[id]`: kartu Inti / Pengayaan / Untuk Ayah Bunda, dimensi Iman/Ilmu/Amal, ayat Arab,
+      urutkan ↑↓, sub topik, murafaqat, amanah, target Qur'an (guru Qur'an); simpan otomatis; pratinjau HP;
+      terbitkan / kembalikan ke draf / tutup. Kartu tidak bisa dihapus setelah ada laporan orang tua.
+- [x] Admin `/admin`: akun username + kata sandi (fungsi `admin_create_account`, `admin_reset_password`, tanpa
+      service key), tautan orang tua–santri, santri & persetujuan penelitian, kelas & penugasan guru, tahun ajaran
+- [x] Pratinjau tanpa login saat pengembangan: `/dev/editor`
+
 ## Menjalankan di komputer
 
 ```bash
