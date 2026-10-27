@@ -120,18 +120,22 @@ async function StudentHome({ student }: { student: Student }) {
     status = submission?.status ?? "not_started";
   }
 
-  const { data: feedback } = await supabase
+  // Tanggapan terbaru: semua tanggapan (Iman & Qur'an) dari laporan yang terakhir ditanggapi (OT-13).
+  const { data: feedbackRows } = await supabase
     .from("teacher_feedback")
-    .select("id, body, subject, created_at, submissions!inner(student_id, bbo_sheets(sheet_no, title))")
+    .select("id, body, subject, created_at, submission_id, submissions!inner(student_id, bbo_sheets(sheet_no, title))")
     .eq("submissions.student_id", student.id)
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(10);
+  const latestSubmission = feedbackRows?.[0]?.submission_id;
+  const feedback = (feedbackRows ?? [])
+    .filter((f) => f.submission_id === latestSubmission)
+    .sort((a, b) => (a.subject === b.subject ? 0 : a.subject === "iman" ? -1 : 1));
 
   const teacherList = (teachers ?? []) as { full_name: string; subject: string }[];
   const guruIman = teacherList.find((t) => t.subject === "iman")?.full_name;
   const guruQuran = teacherList.find((t) => t.subject === "quran")?.full_name;
-  const fbSheet = feedback?.submissions as unknown as { bbo_sheets: { sheet_no: number; title: string } | null } | undefined;
+  const fbSheet = feedbackRows?.[0]?.submissions as unknown as { bbo_sheets: { sheet_no: number; title: string } | null } | undefined;
 
   return (
     <div className="space-y-5">
@@ -202,13 +206,25 @@ async function StudentHome({ student }: { student: Student }) {
           <CardTitle className="text-lg">Tanggapan guru terbaru</CardTitle>
         </CardHeader>
         <CardContent>
-          {feedback ? (
-            <div className="space-y-1">
-              <p className="leading-relaxed">{feedback.body}</p>
-              <p className="text-sm text-muted-foreground">
-                {feedback.subject === "iman" ? "Guru Iman" : "Guru Qur'an"}
-                {fbSheet?.bbo_sheets && <> · Lembar {fbSheet.bbo_sheets.sheet_no}</>}
-              </p>
+          {feedback.length > 0 ? (
+            <div className="space-y-4">
+              {fbSheet?.bbo_sheets && (
+                <p className="text-sm text-muted-foreground">
+                  Lembar {fbSheet.bbo_sheets.sheet_no}: {fbSheet.bbo_sheets.title}
+                </p>
+              )}
+              {feedback.map((f) => (
+                <div key={f.id} className="space-y-1 border-l-4 border-primary/40 pl-3">
+                  <p className="text-sm font-medium text-primary">
+                    {f.subject === "iman" ? `Guru Iman${guruIman ? ` · ${guruIman}` : ""}` : `Guru Qur'an${guruQuran ? ` · ${guruQuran}` : ""}`}
+                  </p>
+                  <p className="leading-relaxed whitespace-pre-line">{f.body}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Diparaf{" "}
+                    {new Date(f.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", timeZone: "Asia/Jakarta" })}
+                  </p>
+                </div>
+              ))}
             </div>
           ) : (
             <p className="text-muted-foreground">Belum ada tanggapan.</p>

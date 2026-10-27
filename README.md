@@ -34,6 +34,17 @@ Stack: Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui, Supabase (Au
 - [x] Tanda tangan Ayah/Ibu (kanvas → PNG di bucket privat), Kirim, Buka kembali selama belum ditanggapi
 - [x] File dibaca lewat signed URL 1 jam; event `record`, `photo`, `submit`, `reopen` di `event_log`
 
+## Status: Tahap 4 — Dashboard guru
+
+- [x] Kelas saya: jumlah status per kelas + tombol "Tanggapi n laporan"
+- [x] Status kelas `/guru/kelas/[id]`: pilih lembar, tabel santri & status, urut nama/status (tidak pernah capaian)
+- [x] Laporan santri `/guru/laporan/[id]`: adab, jawaban kartu, Qur'an + pemutar rekaman, amanah + foto, log baca,
+      kendala & solusi, tanda tangan
+- [x] Tanggapan & paraf terpisah Iman / Qur'an, kalimat siap pakai, "Simpan, paraf & laporan berikutnya";
+      tanggapan Iman mengunci laporan (`reviewed`); event `review` mencatat detik per laporan
+- [x] Rekap per pertanyaan: ✓ / ○ / ○ bantuan per kartu; nama santri hanya tampil bila rincian dibuka
+- [x] Beranda orang tua menampilkan tanggapan Iman & Qur'an terbaru
+
 ## Menjalankan di komputer
 
 ```bash

@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/app-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentProfile } from "@/lib/supabase/server";
 import { STATUS_LAPORAN, hariIniJakarta, rentangTanggal } from "@/lib/format";
@@ -99,6 +101,11 @@ async function ClassCard({ classId, name, subjects }: { classId: string; name: s
         ) : (
           <p className="text-muted-foreground">Belum ada BBO terbit.</p>
         )}
+        <Button asChild size="xl" className="w-full">
+          <Link href={`/guru/kelas/${classId}${sheet ? `?lembar=${sheet.id}` : ""}`}>
+            {counts.submitted > 0 ? `Tanggapi ${counts.submitted} laporan` : "Buka kelas"}
+          </Link>
+        </Button>
       </CardContent>
     </Card>
   );
