@@ -175,12 +175,15 @@ async function StudentHome({ student }: { student: Student }) {
                 />
               </div>
             </div>
-            <Button size="xl" className="w-full" disabled>
-              {status === "not_started" ? "Mulai BBO" : "Lanjutkan BBO"}
+            <Button asChild size="xl" className="w-full">
+              <Link href={`/bbo/${sheet.id}?anak=${student.id}`}>
+                {status === "not_started"
+                  ? "Mulai BBO"
+                  : status === "in_progress"
+                    ? "Lanjutkan BBO"
+                    : "Lihat BBO"}
+              </Link>
             </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Alur kartu dialog hadir di tahap berikutnya.
-            </p>
           </CardContent>
         </Card>
       ) : (

@@ -14,6 +14,16 @@ Stack: Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui, Supabase (Au
       Lembar 11 & 12 versi kartu Inti / Pengayaan / Untuk Ayah Bunda (`supabase/seed.sql`)
 - [x] Login OTP email 6 angka, sesi 30 hari, beranda orang tua (tab kakak-adik), halaman "Kelas saya" guru
 
+## Status: Tahap 2 — Alur orang tua inti
+
+- [x] Sesi BBO `/bbo/[sheetId]?anak=<santri>`: Adab Bermajelis → Pembuka ("Pekan ini Ananda belajar") →
+      kartu dialog Iman → Murafaqat (IPA → IPS → Berhitung → Bahasa) → Doa penutup
+- [x] Kartu dialog: pertanyaan huruf besar, ayat Arab (Amiri), "Lihat jawaban yang diharapkan" (ungu),
+      lipatan "Untuk Ayah Bunda", tiga tombol hasil, catatan singkat opsional
+- [x] Simpan otomatis per jawaban (antrean, ulang otomatis saat sinyal kembali), adab per hari, `event_log`
+- [x] Lanjut dari kartu terakhir: posisi di HP (localStorage) + `submissions.last_card_id` di server
+- [x] Pratinjau tanpa login saat pengembangan: http://localhost:3000/dev/sesi (penyimpanan di memori)
+
 ## Menjalankan di komputer
 
 ```bash
