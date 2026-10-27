@@ -37,35 +37,34 @@ lalu buka `http://<IP-laptop>:3000` (catatan: kamera/mikrofon di tahap berikutny
 
 ## Data contoh (semua nama rekaan)
 
-| Akun | Peran | Santri |
+| Username | Peran | Santri |
 | --- | --- | --- |
-| Ortu A — Siti Aminah | orang tua (ibu) | Hafsah (KA2A), Umar (KA2B) |
-| Ortu B — Ahmad Rasyid | orang tua (ayah) | Zaid (KA2B) |
-| Ortu C — Fatimah Zahra | orang tua (ibu) | Maryam (KA2A) |
-| Ustadzah Rahma Fadhilah | guru Iman, wali kelas KA2A & KA2B | — |
-| Ustadz Hamzah Ibrahim | guru Qur'an KA2A & KA2B | — |
-| Admin Kuttab | admin | — |
+| `ayah.hafsah` | orang tua | Hafsah (KA2A), Umar (KA2B) |
+| `ayah.zaid` | orang tua (ayah) | Zaid (KA2B) |
+| `bunda.maryam` | orang tua (ibu) | Maryam (KA2A) |
+| `ust.rahma` | guru Iman, wali kelas KA2A & KA2B | — |
+| `ust.hamzah` | guru Qur'an KA2A & KA2B | — |
+| `admin.kuttab`, `rendy`, `diana` | admin | — |
 
-Email seed memakai domain `.test` (tidak bisa menerima surat). Mailer bawaan Supabase hanya mengirim ke email
-anggota tim project, jadi untuk mencoba login ganti email salah satu akun ke email Anda:
+## Login: username + kata sandi (tanpa email)
+
+Seperti IXL: username dan kata sandi diberikan guru/admin. Supabase Auth tetap butuh email, jadi username
+dipetakan ke `<username>@bbo-kuttab.invalid` (domain `.invalid` tidak pernah menerima surat). Format username:
+huruf kecil, angka, titik, garis bawah, 3–30 karakter.
+
+Kata sandi uji tersimpan di `akun-uji.local.md` (tidak ikut ke Git). Membuat/mengganti kata sandi sementara lewat SQL:
 
 ```sql
-update auth.users set email = 'anda@contoh.com' where id = 'a0000000-0000-4000-8000-00000000000a'; -- Ortu A
+update auth.users set encrypted_password = extensions.crypt('<sandi-baru>', extensions.gen_salt('bf'))
+where email = '<username>@bbo-kuttab.invalid';
 ```
 
-Untuk banyak orang tua sungguhan, pasang SMTP sendiri (Auth → SMTP Settings).
+Halaman admin untuk membuat akun dan mengatur ulang kata sandi menyusul di Tahap 5.
 
-## Pengaturan Supabase Auth
+## Pengaturan Supabase
 
-- **URL Configuration**: Site URL `https://bbodigital.vercel.app`, Redirect URLs
-  `https://bbodigital.vercel.app/auth/callback` dan `http://localhost:3000/auth/callback`.
 - Project baru wajib menjalankan semua migrasi, termasuk `20261027000001_explicit_grants.sql`: project Supabase
   baru tidak lagi otomatis memberi hak tabel ke `authenticated`.
-- **Kode 6 angka**: mailer bawaan Supabase memakai template tetap yang hanya berisi *tautan* masuk
-  (aplikasi menanganinya di `/auth/callback`; buka tautan di HP yang sama dengan tempat meminta kode).
-  Agar email berisi kode 6 angka, pasang SMTP sendiri (Auth → Emails → SMTP Settings, mis. Resend/Brevo gratis),
-  lalu ubah template **Magic link or OTP** menjadi misalnya
-  `<h2>Kode masuk BBO</h2><p>Kode Anda: <strong>{{ .Token }}</strong></p>`.
 
 ## Uji RLS
 

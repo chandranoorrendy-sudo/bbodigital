@@ -3,10 +3,10 @@
 -- 4 santri, 3 akun orang tua, serta Lembar 11 & 12 (Tema 7. Tata Surya, Bulan)
 -- yang sudah diubah menjadi kartu Inti / Pengayaan / Untuk Ayah Bunda (PRD bagian 4).
 --
--- Semua email memakai domain .test (tidak bisa menerima surat). Untuk mencoba
--- login OTP, ganti email Ortu A ke email Anda sendiri setelah seed, misalnya:
---   update auth.users set email = 'anda@contoh.com' where id = 'a0000000-0000-4000-8000-00000000000a';
--- (Mailer bawaan Supabase hanya mengirim ke email anggota tim project.)
+-- Login memakai username + kata sandi (seperti IXL). Username = bagian depan email
+-- internal <username>@bbo-kuttab.invalid. Seed TIDAK berisi kata sandi; atur setelah seed:
+--   update auth.users set encrypted_password = extensions.crypt('<sandi>', extensions.gen_salt('bf'))
+--   where email = 'ayah.zaid@bbo-kuttab.invalid';
 
 -- ---------------------------------------------------------------------------
 -- Akun (auth.users + identities). Profil dibuat otomatis oleh trigger.
@@ -17,12 +17,12 @@ declare
 begin
   for u in
     select * from (values
-      ('a0000000-0000-4000-8000-000000000001'::uuid, 'admin@bbo-kuttab.test',          'Admin Kuttab'),
-      ('a0000000-0000-4000-8000-000000000002'::uuid, 'ustadzah.rahma@bbo-kuttab.test', 'Ustadzah Rahma Fadhilah'),
-      ('a0000000-0000-4000-8000-000000000003'::uuid, 'ustadz.hamzah@bbo-kuttab.test',  'Ustadz Hamzah Ibrahim'),
-      ('a0000000-0000-4000-8000-00000000000a'::uuid, 'ortu.a@bbo-kuttab.test','Siti Aminah (Bunda Hafsah & Umar)'),
-      ('a0000000-0000-4000-8000-00000000000b'::uuid, 'ayah.zaid@bbo-kuttab.test',      'Ahmad Rasyid (Ayah Zaid)'),
-      ('a0000000-0000-4000-8000-00000000000c'::uuid, 'bunda.maryam@bbo-kuttab.test',   'Fatimah Zahra (Bunda Maryam)')
+      ('a0000000-0000-4000-8000-000000000001'::uuid, 'admin.kuttab@bbo-kuttab.invalid',          'Admin Kuttab'),
+      ('a0000000-0000-4000-8000-000000000002'::uuid, 'ust.rahma@bbo-kuttab.invalid', 'Ustadzah Rahma Fadhilah'),
+      ('a0000000-0000-4000-8000-000000000003'::uuid, 'ust.hamzah@bbo-kuttab.invalid',  'Ustadz Hamzah Ibrahim'),
+      ('a0000000-0000-4000-8000-00000000000a'::uuid, 'bunda.hafsah@bbo-kuttab.invalid','Siti Aminah (Bunda Hafsah & Umar)'),
+      ('a0000000-0000-4000-8000-00000000000b'::uuid, 'ayah.zaid@bbo-kuttab.invalid',      'Ahmad Rasyid (Ayah Zaid)'),
+      ('a0000000-0000-4000-8000-00000000000c'::uuid, 'bunda.maryam@bbo-kuttab.invalid',   'Fatimah Zahra (Bunda Maryam)')
     ) as t(id, email, full_name)
   loop
     insert into auth.users (instance_id, id, aud, role, email, email_confirmed_at,
