@@ -25,6 +25,13 @@ export const SURAH: { no: number; name: string; ayat: number }[] = [
   ["Al-Lahab", 5], ["Al-Ikhlas", 4], ["Al-Falaq", 5], ["An-Nas", 6],
 ].map(([name, ayat], i) => ({ no: i + 1, name: name as string, ayat: ayat as number }));
 
+/** "1. Al-Fatihah (7 ayat) · ayat 1–6" untuk baris Lembar Mutaba'ah. */
+export function surahLabel(item: { surah_no: number; ayah_from: number | null; ayah_to: number | null }) {
+  const s = SURAH[item.surah_no - 1];
+  const range = item.ayah_from ? ` · ayat ${item.ayah_from}${item.ayah_to && item.ayah_to !== item.ayah_from ? `–${item.ayah_to}` : ""}` : "";
+  return `${item.surah_no}. ${s?.name ?? "Surat"} (${s?.ayat ?? "?"} ayat)${range}`;
+}
+
 export function surahName(no: number | null) {
   return no ? (SURAH[no - 1]?.name ?? `Surat ${no}`) : "";
 }

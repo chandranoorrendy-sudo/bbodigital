@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { hariIniJakarta } from "@/lib/format";
 import type {
+  AdabFrequency,
+  AdabItem,
+  MutabaahError,
+  MutabaahItem,
   AdabState,
   AmanahItem,
   Answer,
@@ -50,6 +54,8 @@ export async function loadSession(
     { data: quranTargets },
     { data: guardian },
     { data: readingLogs },
+    { data: mutabaahItems },
+    { data: adabItems },
   ] = await Promise.all([
     supabase
       .from("bbo_sections")
@@ -61,7 +67,7 @@ export async function loadSession(
       .order("position", { referencedTable: "bbo_cards" }),
     supabase
       .from("murafaqat_items")
-      .select("id, subject, learned, home_practice, position")
+      .select("id, subject, learned, home_practice, position, needs_photo, photo_prompt")
       .eq("sheet_id", sheetId)
       .order("position"),
     supabase
@@ -70,7 +76,8 @@ export async function loadSession(
         "id, status, last_card_id, submitted_at, card_responses(card_id, result, note), " +
           "quran_reports(id, kind, surah_no, ayah_from, ayah_to, tilawah_book, tilawah_page, fluency, note, audio_path, duration_sec, recorded_at), " +
           "amanah_checks(amanah_item_id, done), media(id, kind, path, bytes, ref_table, ref_id), " +
-          "parent_notes(obstacle, action), signatures(role, image_path, signed_at)",
+          "parent_notes(obstacle, action), signatures(role, image_path, signed_at), " +
+          "quran_mutabaah_checks(item_id, errors, note), adab_ratings(adab_item_id, rating)",
       )
       .eq("sheet_id", sheetId)
       .eq("student_id", studentId)
@@ -85,6 +92,8 @@ export async function loadSession(
       .order("read_on", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(5),
+    supabase.from("quran_mutabaah_items").select("id, surah_no, ayah_from, ayah_to, position").eq("sheet_id", sheetId).order("position"),
+    supabase.from("adab_items").select("id, text, position").eq("sheet_id", sheetId).order("position"),
   ]);
 
   // Supabase-js tidak bisa menebak bentuk relasi dari select string panjang; tegaskan di sini.
@@ -99,6 +108,8 @@ export async function loadSession(
     media: MediaItem[];
     parent_notes: { obstacle: string | null; action: string | null } | null;
     signatures: { role: string; image_path: string; signed_at: string }[];
+    quran_mutabaah_checks: { item_id: string; errors: MutabaahError[]; note: string | null }[];
+    adab_ratings: { adab_item_id: string; rating: AdabFrequency }[];
   } | null;
 
   let adabToday: AdabState | null = null;
@@ -139,6 +150,10 @@ export async function loadSession(
     parentNote: { obstacle: sub?.parent_notes?.obstacle ?? null, action: sub?.parent_notes?.action ?? null },
     signatures: (sub?.signatures ?? []).filter((s) => s.role === "ayah" || s.role === "ibu") as Signature[],
     readingLogs: (readingLogs ?? []) as ReadingLog[],
+    mutabaahItems: (mutabaahItems ?? []) as MutabaahItem[],
+    mutabaahChecks: Object.fromEntries((sub?.quran_mutabaah_checks ?? []).map((c) => [c.item_id, { errors: c.errors, note: c.note }])),
+    adabItems: (adabItems ?? []) as AdabItem[],
+    adabRatings: Object.fromEntries((sub?.adab_ratings ?? []).map((r) => [r.adab_item_id, r.rating])),
     today,
   };
 }

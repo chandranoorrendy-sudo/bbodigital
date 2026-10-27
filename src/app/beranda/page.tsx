@@ -121,6 +121,12 @@ async function StudentHome({ student }: { student: Student }) {
     status = submission?.status ?? "not_started";
   }
 
+  // Kisi-kisi ujian kelas ini dan berapa yang sudah dilatih (dibandingkan dengan diri sendiri saja).
+  const [{ count: kisiTotal }, { count: kisiDone }] = await Promise.all([
+    supabase.from("kisi_kisi").select("id", { count: "exact", head: true }).eq("class_id", student.class_id ?? ""),
+    supabase.from("kisi_checks").select("id", { count: "exact", head: true }).eq("student_id", student.id),
+  ]);
+
   // Tanggapan terbaru: semua tanggapan (Iman & Qur'an) dari laporan yang terakhir ditanggapi (OT-13).
   const { data: feedbackRows } = await supabase
     .from("teacher_feedback")
@@ -208,6 +214,23 @@ async function StudentHome({ student }: { student: Student }) {
             </CardDescription>
           </CardHeader>
         </Card>
+      )}
+
+      {(kisiTotal ?? 0) > 0 && (
+        <Link
+          href={`/kisi?anak=${student.id}`}
+          className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-gold/60 bg-gold-soft px-4 py-3"
+        >
+          <span>
+            <span className="block font-semibold">Kisi-kisi ujian semester</span>
+            <span className="text-sm text-muted-foreground">
+              {kisiDone ?? 0} dari {kisiTotal} poin sudah dilatih di rumah
+            </span>
+          </span>
+          <span aria-hidden className="text-gold-ink">
+            →
+          </span>
+        </Link>
       )}
 
       <Card>

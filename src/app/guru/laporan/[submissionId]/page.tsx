@@ -5,7 +5,13 @@ import { METIQ_SELECT, MetiqReportList, type MetiqRow } from "@/components/metiq
 import { getCurrentProfile } from "@/lib/supabase/server";
 import { STATUS_LAPORAN, rentangTanggal } from "@/lib/format";
 import { surahName } from "@/lib/bbo/surah";
+import { surahLabel } from "@/lib/bbo/surah";
 import {
+  ADAB_FREQUENCY_LABEL,
+  MUTABAAH_ERROR_LABEL,
+  SUBJECT_LABEL,
+  type AdabFrequency,
+  type MutabaahError,
   FLUENCY_LABEL,
   QURAN_KIND_LABEL,
   READING_BOOKS,
@@ -32,6 +38,8 @@ type Report = {
   parent_notes: { obstacle: string | null; action: string | null } | null;
   signatures: { role: string; image_path: string; signed_at: string }[];
   teacher_feedback: { id: string; subject: Subject; body: string; created_at: string; teacher_id: string }[];
+  quran_mutabaah_checks: { item_id: string; errors: MutabaahError[]; note: string | null }[];
+  adab_ratings: { adab_item_id: string; rating: AdabFrequency }[];
 };
 
 const ADAB_LABEL: [keyof Report["adab_logs"][number], string][] = [
@@ -60,14 +68,25 @@ export default async function LaporanPage({ params }: { params: Promise<{ submis
         "card_responses(card_id, result, note), adab_logs(session_date, niat, wudhu, pakaian, duduk, doa_awal, doa_akhir), " +
         "quran_reports(id, kind, surah_no, ayah_from, ayah_to, tilawah_book, tilawah_page, fluency, note, audio_path, duration_sec, recorded_at), " +
         "amanah_checks(amanah_item_id, done), media(id, kind, path, ref_table, ref_id), parent_notes(obstacle, action), " +
-        "signatures(role, image_path, signed_at), teacher_feedback(id, subject, body, created_at, teacher_id)",
+        "signatures(role, image_path, signed_at), teacher_feedback(id, subject, body, created_at, teacher_id), " +
+        "quran_mutabaah_checks(item_id, errors, note), adab_ratings(adab_item_id, rating)",
     )
     .eq("id", submissionId)
     .maybeSingle();
   const report = data as unknown as Report | null;
   if (!report) notFound();
 
-  const [{ data: sections }, { data: amanah }, { data: mine }, { data: readingLogs }, { data: siblings }, { data: metiq }] = await Promise.all([
+  const [
+    { data: sections },
+    { data: amanah },
+    { data: mine },
+    { data: readingLogs },
+    { data: siblings },
+    { data: metiq },
+    { data: murafaqat },
+    { data: mutabaahItems },
+    { data: adabItems },
+  ] = await Promise.all([
     supabase
       .from("bbo_sections")
       .select("title, cards:bbo_cards(id, position, tier, dimension, prompt, expected_answer)")
@@ -94,6 +113,9 @@ export default async function LaporanPage({ params }: { params: Promise<{ submis
       .eq("student_id", report.student.id)
       .order("completed_at", { ascending: false, nullsFirst: false })
       .limit(10),
+    supabase.from("murafaqat_items").select("id, subject, learned, needs_photo, photo_prompt").eq("sheet_id", report.sheet.id).order("position"),
+    supabase.from("quran_mutabaah_items").select("id, surah_no, ayah_from, ayah_to, position").eq("sheet_id", report.sheet.id).order("position"),
+    supabase.from("adab_items").select("id, text, position").eq("sheet_id", report.sheet.id).order("position"),
   ]);
 
   // Laporan berikutnya yang menunggu tanggapan (urut nama), untuk menanggapi beruntun.
@@ -160,6 +182,19 @@ export default async function LaporanPage({ params }: { params: Promise<{ submis
                 ))}
             </ul>
           )}
+          {(adabItems ?? []).length > 0 && (
+            <div className="space-y-1 pt-2 text-sm">
+              <p className="font-medium">Riaayah adab di rumah (pendampingan orang tua)</p>
+              {(adabItems ?? []).map((a) => {
+                const r = report.adab_ratings.find((x) => x.adab_item_id === a.id)?.rating;
+                return (
+                  <p key={a.id}>
+                    {a.text}: <span className={r ? "font-medium" : "text-muted-foreground"}>{r ? ADAB_FREQUENCY_LABEL[r] : "belum diisi"}</span>
+                  </p>
+                );
+              })}
+            </div>
+          )}
         </Block>
 
         <Block title="Dialog Iman">
@@ -210,7 +245,46 @@ export default async function LaporanPage({ params }: { params: Promise<{ submis
               ))}
             </ul>
           )}
+          {(mutabaahItems ?? []).length > 0 && (
+            <div className="space-y-2 pt-2">
+              <p className="font-medium">Lembar Mutaba&apos;ah</p>
+              <ul className="divide-y rounded-lg border text-sm">
+                {(mutabaahItems ?? []).map((m) => {
+                  const c = report.quran_mutabaah_checks.find((x) => x.item_id === m.id);
+                  return (
+                    <li key={m.id} className="space-y-1 px-3 py-2">
+                      <p className="font-medium">{surahLabel(m)}</p>
+                      <p className={!c ? "text-muted-foreground" : c.errors.length ? "text-destructive" : "text-gold-ink"}>
+                        {!c ? "Belum dicek" : c.errors.length ? `Kesalahan: ${c.errors.map((e) => MUTABAAH_ERROR_LABEL[e]).join(", ")}` : "✓ Tidak ada kesalahan"}
+                      </p>
+                      {c?.note && <p>Catatan: {c.note}</p>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </Block>
+
+        {(murafaqat ?? []).some((m) => m.needs_photo) && (
+          <Block title="Murafaqat · hasil kerja di rumah">
+            <ul className="space-y-3">
+              {(murafaqat ?? [])
+                .filter((m) => m.needs_photo)
+                .map((m) => {
+                  const itemPhotos = photos.filter((p) => p.ref_table === "murafaqat_items" && p.ref_id === m.id);
+                  return (
+                    <li key={m.id} className="space-y-2">
+                      <p>
+                        <span className="font-medium">{SUBJECT_LABEL[m.subject as keyof typeof SUBJECT_LABEL]}:</span> {m.photo_prompt || m.learned}
+                      </p>
+                      {itemPhotos.length ? <Gallery photos={itemPhotos} urls={urls} /> : <Empty>Belum ada foto.</Empty>}
+                    </li>
+                  );
+                })}
+            </ul>
+          </Block>
+        )}
 
         <Block title="Amanah">
           <ul className="space-y-3">

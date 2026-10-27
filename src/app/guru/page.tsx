@@ -43,6 +43,9 @@ export default async function GuruPage() {
         <Button asChild variant="outline" className="h-11">
           <Link href="/guru/bbo">Penyusun BBO</Link>
         </Button>
+        <Button asChild variant="outline" className="h-11">
+          <Link href="/guru/kisi">Kisi-kisi ujian</Link>
+        </Button>
         {profile.role === "admin" && (
           <Button asChild variant="outline" className="h-11">
             <Link href="/admin">Admin kuttab</Link>

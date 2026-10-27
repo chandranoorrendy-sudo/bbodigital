@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CopySheetForm } from "@/components/editor/copy-form";
+import { ImportFileForm } from "@/components/editor/import-form";
 import { GuruHeader } from "@/components/guru/header";
 import { Button } from "@/components/ui/button";
 import { getCurrentProfile } from "@/lib/supabase/server";
@@ -43,6 +44,15 @@ export default async function BboListPage() {
                 <Link href="/guru/bbo/baru">+ Buat BBO baru</Link>
               </Button>
             </div>
+
+            <ImportFileForm
+              kind="bbo"
+              classes={classes.map((c) => ({
+                id: c.id,
+                label: `${c.name}${c.academic_years ? ` (${c.academic_years.label})` : ""}`,
+                nextNo: Math.max(0, ...all.filter((s) => s.class_id === c.id).map((s) => s.sheet_no)) + 1,
+              }))}
+            />
 
             <CopySheetForm
               sources={all.map((s) => ({

@@ -4,10 +4,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DEFAULT_OPENING_NOTE } from "@/lib/editor/defaults";
 import { createClient } from "@/lib/supabase/client";
 
-export const DEFAULT_OPENING =
-  "Barakallahu fiikum Ayah Bunda yang sudah berjuang hingga saat ini. Allah sebaik-baik pemberi balasan atas semua perjuangan Ayah Bunda. Dialog BBO boleh dicicil sedikit-sedikit setiap hari, di waktu dan tempat yang nyaman.";
+const DEFAULT_OPENING = DEFAULT_OPENING_NOTE;
 
 /** Bagian standar setiap lembar, urut sesuai nilai kuttab: adab → iman → ilmu → Qur'an → amal. */
 const DEFAULT_SECTIONS = [

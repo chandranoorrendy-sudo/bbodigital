@@ -11,6 +11,8 @@ import {
   EMPTY_ADAB,
   MAX_PHOTOS,
   SUBJECT_ORDER,
+  type AdabFrequency,
+  type MutabaahCheck,
   type AdabState,
   type AmanahItem,
   type Answer,
@@ -27,7 +29,8 @@ import {
   type SubmissionStatus,
 } from "@/lib/bbo/types";
 import { AdabSlide, ClosingSlide, DialogCardSlide, MurafaqatSlide, OpeningSlide } from "./cards";
-import type { Recording } from "./media";
+import { MutabaahPanel, RiaayahAdabPanel } from "./forms";
+import { PhotoGrid, type Recording } from "./media";
 import { AmanahSlide, CatatanSlide, KirimSlide, QuranSlide } from "./report-cards";
 
 type Group = "adab" | "iman" | "murafaqat" | "quran" | "amanah" | "catatan" | "kirim";
@@ -135,6 +138,8 @@ export function BboSession({ data, demo = false }: { data: SessionData; demo?: b
   const [parentNote, setParentNote] = useState<ParentNote>(data.parentNote);
   const [signatures, setSignatures] = useState<Signature[]>(data.signatures);
   const [readingLogs, setReadingLogs] = useState<ReadingLog[]>(data.readingLogs);
+  const [mutabaah, setMutabaah] = useState<Record<string, MutabaahCheck>>(data.mutabaahChecks);
+  const [adabRatings, setAdabRatings] = useState<Record<string, AdabFrequency>>(data.adabRatings);
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
@@ -321,6 +326,16 @@ export function BboSession({ data, demo = false }: { data: SessionData; demo?: b
     enqueue(`amanah:${item.id}`, (id) => store.setAmanahDone(id, item.id, done));
   }
 
+  function saveMutabaah(itemId: string, check: MutabaahCheck) {
+    setMutabaah((prev) => ({ ...prev, [itemId]: check }));
+    enqueue(`mutabaah:${itemId}`, (id) => store.saveMutabaah(id, itemId, check.errors, check.note));
+  }
+
+  function rateAdab(itemId: string, rating: AdabFrequency) {
+    setAdabRatings((prev) => ({ ...prev, [itemId]: rating }));
+    enqueue(`adab_rating:${itemId}`, (id) => store.saveAdabRating(id, itemId, rating));
+  }
+
   async function addPhotos(key: string, folder: string, refTable: string, refId: string | null, files: File[]) {
     const existing = media.filter((m) => m.ref_table === refTable && m.ref_id === refId).length;
     const room = Math.max(0, MAX_PHOTOS - existing);
@@ -495,18 +510,40 @@ export function BboSession({ data, demo = false }: { data: SessionData; demo?: b
             onAnswer={(r, n) => answer(slide.card, r, n)}
           />
         ) : slide.kind === "murafaqat" ? (
-          <MurafaqatSlide item={slide.item} index={slide.index} total={slide.total} />
+          <div className="space-y-5">
+            <MurafaqatSlide item={slide.item} index={slide.index} total={slide.total} />
+            {slide.item.needs_photo && (
+              <section className="space-y-2">
+                <h3 className="font-semibold">{slide.item.photo_prompt || "Foto hasil kerja Ananda"}</h3>
+                <PhotoGrid
+                  photos={media.filter((m) => m.ref_table === "murafaqat_items" && m.ref_id === slide.item.id)}
+                  urls={urls}
+                  max={MAX_PHOTOS}
+                  busy={busyKey === `photo:${slide.item.id}`}
+                  disabled={readOnly}
+                  label="Potret hasil kerja"
+                  onAdd={(files) => addPhotos(`photo:${slide.item.id}`, `murafaqat/${slide.item.id}`, "murafaqat_items", slide.item.id, files)}
+                  onDelete={deletePhoto}
+                />
+              </section>
+            )}
+          </div>
         ) : slide.kind === "quran" ? (
-          <QuranSlide
-            targets={data.quranTargets}
-            reports={quranReports}
-            urls={urls}
-            readOnly={readOnly}
-            busy={busyKey === "quran"}
-            onAdd={addQuranReport}
-            onDelete={deleteQuranReport}
-          />
+          <div className="space-y-8">
+            <QuranSlide
+              targets={data.quranTargets}
+              reports={quranReports}
+              urls={urls}
+              readOnly={readOnly}
+              busy={busyKey === "quran"}
+              onAdd={addQuranReport}
+              onDelete={deleteQuranReport}
+            />
+            <MutabaahPanel items={data.mutabaahItems} checks={mutabaah} readOnly={readOnly} onSave={saveMutabaah} />
+          </div>
         ) : slide.kind === "amanah" ? (
+          <div className="space-y-8">
+          <RiaayahAdabPanel items={data.adabItems} ratings={adabRatings} readOnly={readOnly} onRate={rateAdab} />
           <AmanahSlide
             items={data.amanah}
             done={amanahDone}
@@ -522,6 +559,7 @@ export function BboSession({ data, demo = false }: { data: SessionData; demo?: b
             onAddReading={addReading}
             onDeleteReading={deleteReading}
           />
+          </div>
         ) : slide.kind === "catatan" ? (
           <CatatanSlide
             note={parentNote}

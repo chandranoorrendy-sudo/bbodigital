@@ -6,14 +6,18 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DialogCardSlide, MurafaqatSlide, OpeningSlide } from "@/components/bbo/cards";
+import { surahLabel } from "@/lib/bbo/surah";
+import { SURAH_JUZ_30_FIRST } from "@/lib/bbo/surah";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import {
   QURAN_KIND_LABEL,
   SUBJECT_LABEL,
   SUBJECT_ORDER,
+  type AdabItem,
   type AmanahItem,
   type BboCard,
+  type MutabaahItem,
   type CardDimension,
   type CardTier,
   type MurafaqatItem,
@@ -30,6 +34,8 @@ export type EditorData = {
   murafaqat: MurafaqatItem[];
   amanah: AmanahItem[];
   targets: QuranTarget[];
+  mutabaah: MutabaahItem[];
+  adabItems: AdabItem[];
   canEdit: boolean;
   canEditQuran: boolean;
   submissionCount: number;
@@ -112,6 +118,9 @@ export function BboEditor({ data }: { data: EditorData }) {
   const [murafaqat, setMurafaqat] = useState<MurafaqatItem[]>(data.murafaqat);
   const [amanah, setAmanah] = useState<AmanahItem[]>(data.amanah);
   const [targets, setTargets] = useState<QuranTarget[]>(data.targets);
+  const [mutabaah, setMutabaah] = useState<MutabaahItem[]>(data.mutabaah);
+  const [adabItems, setAdabItems] = useState<AdabItem[]>(data.adabItems);
+  const [newSurah, setNewSurah] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   const [preview, setPreview] = useState<Preview>({ kind: "pembuka" });
   const [saving, setSaving] = useState(0);
@@ -291,6 +300,46 @@ export function BboEditor({ data }: { data: EditorData }) {
   }
   async function deleteTarget(id: string) {
     if (await run("Hapus target", () => supabase.from("quran_targets").delete().eq("id", id))) setTargets((prev) => prev.filter((t) => t.id !== id));
+  }
+
+  // ---- Lembar Mutaba'ah & Riaayah Adab ----
+  async function addMutabaah() {
+    if (!newSurah) return;
+    const position = Math.max(0, ...mutabaah.map((m) => m.position)) + 1;
+    const { data: row, error } = await supabase
+      .from("quran_mutabaah_items")
+      .insert({ sheet_id: sheet.id, surah_no: Number(newSurah), position })
+      .select("id, surah_no, ayah_from, ayah_to, position")
+      .single();
+    if (error || !row) return toast.error("Surat belum bisa ditambah.");
+    setMutabaah((prev) => [...prev, row as MutabaahItem]);
+    setNewSurah("");
+  }
+  function patchMutabaah(id: string, patch: Partial<MutabaahItem>) {
+    setMutabaah((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+    void run("Mutaba'ah", () => supabase.from("quran_mutabaah_items").update(patch).eq("id", id));
+  }
+  async function deleteMutabaah(id: string) {
+    if (await run("Hapus surat", () => supabase.from("quran_mutabaah_items").delete().eq("id", id)))
+      setMutabaah((prev) => prev.filter((m) => m.id !== id));
+  }
+
+  async function addAdabItem() {
+    const position = Math.max(0, ...adabItems.map((a) => a.position)) + 1;
+    const { data: row, error } = await supabase
+      .from("adab_items")
+      .insert({ sheet_id: sheet.id, text: "Adab baru", position })
+      .select("id, text, position")
+      .single();
+    if (error || !row) return toast.error("Adab belum bisa ditambah.");
+    setAdabItems((prev) => [...prev, row as AdabItem]);
+  }
+  function patchAdabItem(id: string, text: string) {
+    setAdabItems((prev) => prev.map((a) => (a.id === id ? { ...a, text } : a)));
+    void run("Adab", () => supabase.from("adab_items").update({ text }).eq("id", id));
+  }
+  async function deleteAdabItem(id: string) {
+    if (await run("Hapus adab", () => supabase.from("adab_items").delete().eq("id", id))) setAdabItems((prev) => prev.filter((a) => a.id !== id));
   }
 
   // ---- Status terbit ----
@@ -556,6 +605,25 @@ export function BboEditor({ data }: { data: EditorData }) {
               </div>
               <AutoField multiline rows={2} label="Yang dipelajari di kuttab" value={m.learned} disabled={ro} onSave={(v) => patchMurafaqat(m.id, { learned: v ?? "-" })} />
               <AutoField multiline rows={2} label="Yang bisa dilatih di rumah" value={m.home_practice} disabled={ro} onSave={(v) => patchMurafaqat(m.id, { home_practice: v })} />
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="size-5"
+                  checked={m.needs_photo}
+                  disabled={ro}
+                  onChange={(e) => patchMurafaqat(m.id, { needs_photo: e.target.checked })}
+                />
+                Orang tua memotret hasil kerja Ananda (mis. tulisan huruf)
+              </label>
+              {m.needs_photo && (
+                <AutoField
+                  label="Petunjuk foto"
+                  value={m.photo_prompt}
+                  disabled={ro}
+                  placeholder="mis. Foto tulisan huruf A dan a di buku tulis"
+                  onSave={(v) => patchMurafaqat(m.id, { photo_prompt: v })}
+                />
+              )}
             </div>
           ))}
           {!ro && (
@@ -622,6 +690,85 @@ export function BboEditor({ data }: { data: EditorData }) {
           {data.canEditQuran && (
             <Button variant="outline" className="h-11 w-full" onClick={addTarget}>
               + Target Qur&apos;an
+            </Button>
+          )}
+        </section>
+
+        {/* Lembar Mutaba'ah */}
+        <section className="space-y-3 rounded-xl border bg-background p-4">
+          <h2 className="text-lg font-semibold">Lembar Mutaba&apos;ah Al-Qur&apos;an</h2>
+          <p className="text-sm text-muted-foreground">
+            Surat yang disimak orang tua. Per surat, orang tua mencentang kesalahan: Makharijul Huruf, Shifatul Huruf, Itmamul
+            Harokat, Mad, Ghunnah, Kelancaran.
+          </p>
+          {mutabaah.map((m) => (
+            <div key={m.id} className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
+              <p className="min-w-40 flex-1 font-medium">{surahLabel(m)}</p>
+              <label className="w-20 space-y-1">
+                <span className="text-xs">Ayat dari</span>
+                <input
+                  className={input}
+                  inputMode="numeric"
+                  defaultValue={m.ayah_from ?? ""}
+                  disabled={!data.canEditQuran}
+                  onBlur={(e) => patchMutabaah(m.id, { ayah_from: e.target.value ? Number(e.target.value) : null })}
+                />
+              </label>
+              <label className="w-20 space-y-1">
+                <span className="text-xs">sampai</span>
+                <input
+                  className={input}
+                  inputMode="numeric"
+                  defaultValue={m.ayah_to ?? ""}
+                  disabled={!data.canEditQuran}
+                  onBlur={(e) => patchMutabaah(m.id, { ayah_to: e.target.value ? Number(e.target.value) : null })}
+                />
+              </label>
+              {data.canEditQuran && !locked && (
+                <Button variant="ghost" className="h-10 text-destructive" onClick={() => deleteMutabaah(m.id)}>
+                  Hapus
+                </Button>
+              )}
+            </div>
+          ))}
+          {data.canEditQuran && (
+            <div className="flex gap-2">
+              <select className={cn(input, "flex-1")} value={newSurah} onChange={(e) => setNewSurah(e.target.value)}>
+                <option value="">Pilih surat…</option>
+                {SURAH_JUZ_30_FIRST.map((s) => (
+                  <option key={s.no} value={s.no}>
+                    {s.no}. {s.name}
+                  </option>
+                ))}
+              </select>
+              <Button variant="outline" className="h-11" disabled={!newSurah} onClick={addMutabaah}>
+                + Surat
+              </Button>
+            </div>
+          )}
+        </section>
+
+        {/* Riaayah Adab */}
+        <section className="space-y-3 rounded-xl border bg-background p-4">
+          <h2 className="text-lg font-semibold">Riaayah adab di rumah</h2>
+          <p className="text-sm text-muted-foreground">
+            Adab yang sudah dipelajari di kuttab. Orang tua memilih selalu / sering / jarang / tidak pernah membimbing.
+          </p>
+          {adabItems.map((a) => (
+            <div key={a.id} className="flex items-end gap-2">
+              <div className="flex-1">
+                <AutoField label="Adab" value={a.text} disabled={!data.canEditQuran} onSave={(v) => patchAdabItem(a.id, v ?? a.text)} />
+              </div>
+              {data.canEditQuran && !locked && (
+                <Button variant="ghost" className="h-11 text-destructive" onClick={() => deleteAdabItem(a.id)}>
+                  Hapus
+                </Button>
+              )}
+            </div>
+          ))}
+          {data.canEditQuran && (
+            <Button variant="outline" className="h-11 w-full" onClick={addAdabItem}>
+              + Adab
             </Button>
           )}
         </section>

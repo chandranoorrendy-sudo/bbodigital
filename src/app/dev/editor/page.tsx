@@ -16,6 +16,8 @@ export default function DevEditorPage() {
           murafaqat: FIXTURE.murafaqat,
           amanah: FIXTURE.amanah,
           targets: FIXTURE.quranTargets,
+          mutabaah: FIXTURE.mutabaahItems,
+          adabItems: FIXTURE.adabItems,
           canEdit: true,
           canEditQuran: true,
           submissionCount: 0,

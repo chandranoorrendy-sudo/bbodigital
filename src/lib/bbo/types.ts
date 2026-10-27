@@ -30,6 +30,32 @@ export type MurafaqatItem = {
   learned: string;
   home_practice: string | null;
   position: number;
+  /** Orang tua memotret hasil kerja Ananda, mis. tulisan huruf di buku tulis. */
+  needs_photo: boolean;
+  photo_prompt: string | null;
+};
+
+export type MutabaahError = "makharijul_huruf" | "shifatul_huruf" | "itmamul_harokat" | "mad" | "ghunnah" | "kelancaran";
+export type MutabaahItem = { id: string; surah_no: number; ayah_from: number | null; ayah_to: number | null; position: number };
+export type MutabaahCheck = { errors: MutabaahError[]; note: string | null };
+
+export type AdabFrequency = "selalu" | "sering" | "jarang" | "tidak_pernah";
+export type AdabItem = { id: string; text: string; position: number };
+
+export const MUTABAAH_ERROR_LABEL: Record<MutabaahError, string> = {
+  makharijul_huruf: "Makharijul Huruf",
+  shifatul_huruf: "Shifatul Huruf",
+  itmamul_harokat: "Itmamul Harokat",
+  mad: "Mad",
+  ghunnah: "Ghunnah",
+  kelancaran: "Kelancaran",
+};
+
+export const ADAB_FREQUENCY_LABEL: Record<AdabFrequency, string> = {
+  selalu: "Selalu",
+  sering: "Sering",
+  jarang: "Jarang",
+  tidak_pernah: "Tidak pernah",
 };
 
 export type SheetInfo = {
@@ -119,6 +145,10 @@ export type SessionData = {
   parentNote: ParentNote;
   signatures: Signature[];
   readingLogs: ReadingLog[];
+  mutabaahItems: MutabaahItem[];
+  mutabaahChecks: Record<string, MutabaahCheck>;
+  adabItems: AdabItem[];
+  adabRatings: Record<string, AdabFrequency>;
   today: string;
 };
 

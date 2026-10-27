@@ -67,13 +67,32 @@ export const FIXTURE: SessionData = {
     },
   ],
   murafaqat: [
-    { id: "m2", subject: "ips", learned: "Kisah Ashabul Kahfi.", home_practice: "Bacakan kisahnya sebelum tidur.", position: 2 },
+    {
+      id: "m2",
+      subject: "ips",
+      learned: "Kisah Ashabul Kahfi.",
+      home_practice: "Bacakan kisahnya sebelum tidur.",
+      position: 2,
+      needs_photo: false,
+      photo_prompt: null,
+    },
     {
       id: "m1",
       subject: "ipa",
       learned: "Peredaran bumi, bulan, dan matahari yang berkaitan dengan waktu.",
       home_practice: "Lihat bentuk bulan beberapa malam berturut-turut.",
       position: 1,
+      needs_photo: false,
+      photo_prompt: null,
+    },
+    {
+      id: "m3",
+      subject: "bahasa",
+      learned: "Mengenal kaidah penulisan huruf A dan a.",
+      home_practice: "Latih menulis huruf A dan a di buku tulis sesuai urutan goresan.",
+      position: 3,
+      needs_photo: true,
+      photo_prompt: "Foto tulisan huruf A dan a di buku tulis Ananda",
     },
   ],
   amanah: [
@@ -95,4 +114,16 @@ export const FIXTURE: SessionData = {
   parentNote: { obstacle: null, action: null },
   signatures: [],
   readingLogs: [],
+  mutabaahItems: [
+    { id: "q1", surah_no: 1, ayah_from: null, ayah_to: null, position: 1 },
+    { id: "q2", surah_no: 114, ayah_from: null, ayah_to: null, position: 2 },
+    { id: "q3", surah_no: 100, ayah_from: 1, ayah_to: 6, position: 3 },
+  ],
+  mutabaahChecks: {},
+  adabItems: [
+    { id: "ad1", text: "Adab salam", position: 1 },
+    { id: "ad2", text: "Adab majelis", position: 2 },
+    { id: "ad3", text: "Adab makan", position: 3 },
+  ],
+  adabRatings: {},
 };

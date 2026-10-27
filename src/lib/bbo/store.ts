@@ -1,5 +1,15 @@
 import { createClient } from "@/lib/supabase/client";
-import type { AdabState, CardResult, MediaItem, ParentNote, QuranReport, ReadingLog, SignerRole } from "./types";
+import type {
+  AdabFrequency,
+  AdabState,
+  CardResult,
+  MediaItem,
+  MutabaahError,
+  ParentNote,
+  QuranReport,
+  ReadingLog,
+  SignerRole,
+} from "./types";
 
 export type NewQuranReport = Omit<QuranReport, "id" | "audio_path" | "duration_sec" | "recorded_at">;
 
@@ -34,6 +44,8 @@ export interface SessionStore {
   deleteSignature(submissionId: string, role: SignerRole, path: string): Promise<void>;
   submit(submissionId: string): Promise<string>;
   reopen(submissionId: string): Promise<void>;
+  saveMutabaah(submissionId: string, itemId: string, errors: MutabaahError[], note: string | null): Promise<void>;
+  saveAdabRating(submissionId: string, adabItemId: string, rating: AdabFrequency): Promise<void>;
 }
 
 const BUCKET = "submissions";
@@ -277,6 +289,22 @@ export function supabaseStore(opts: {
       must(await supabase.from("submissions").update({ status: "in_progress", submitted_at: null }).eq("id", subId));
       status = "in_progress";
     },
+
+    async saveMutabaah(subId, itemId, errors, note) {
+      must(
+        await supabase
+          .from("quran_mutabaah_checks")
+          .upsert({ submission_id: subId, item_id: itemId, errors, note }, { onConflict: "submission_id,item_id" }),
+      );
+    },
+
+    async saveAdabRating(subId, adabItemId, rating) {
+      must(
+        await supabase
+          .from("adab_ratings")
+          .upsert({ submission_id: subId, adab_item_id: adabItemId, rating }, { onConflict: "submission_id,adab_item_id" }),
+      );
+    },
   };
 }
 
@@ -357,6 +385,12 @@ export function memoryStore(): SessionStore {
       return new Date().toISOString();
     },
     async reopen() {
+      await delay();
+    },
+    async saveMutabaah() {
+      await delay();
+    },
+    async saveAdabRating() {
       await delay();
     },
   };
